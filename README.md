@@ -14,4 +14,5 @@ Social factors (e.g., income, education), demographic characteristics (e.g., age
 The data will show that certain demographic groups (e.g., older individuals or those from lower-income backgrounds) who also have specific health conditions (e.g., higher BMI, hypertension) are more likely to develop diabetes. Additionally, social factors such as limited access to healthcare and education will likely increase the risk of developing diabetes.
 ### References:
 Rajendra, P., & Latifi, S. (2021). Prediction of diabetes using logistic regression and ensemble techniques. Computer Methods and Programs in Biomedicine Update, 1, 100032.
+
 World Health Organization. (2023, April 5). Diabetes. World Health Organization. https://www.who.int/news-room/fact-sheets/detail/diabetes.

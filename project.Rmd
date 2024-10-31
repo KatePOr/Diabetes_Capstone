@@ -1,0 +1,127 @@
+---
+title: "Project"
+author: "Kate O'Rourke"
+date: "2024-10-29"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+```
+
+```{r}
+CDC_2023 <- read_xpt('LLCP2023.XPT')
+```
+
+#### Remove unused columns
+```{r}
+CDC_2023_subset = subset(CDC_2023, 
+                         select = c(EDUCA, EMPLOY1, INCOME3, WEIGHT2, HEIGHT3, SEXVAR, PHYSHLTH, MENTHLTH, PERSDOC3,
+                                               MEDCOST1, SMOKE100, DRNK3GE5, EXERANY2, BPHIGH6, TOLDHI3, CVDINFR4,
+                                               CVDCRHD4, CVDSTRK3, CHCKDNY2, DIABETE4, DIABTYPE)
+                         )
+```
+
+```{r}
+colSums(is.na(CDC_2023_subset))
+```
+
+### Convert columns (except for WEIGHT2 and HEIGHT3) to factors
+```{r}
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-c(4,5, 12, 13)]
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+### Get columns summaries for factor data
+```{r}
+table(CDC_2023_subset$EDUCA, useNA = "ifany")
+```
+```{r}
+table(CDC_2023_subset$EMPLOY1, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$INCOME3, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$SEXVAR, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$PHYSHLTH, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$MENTHLTH, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$PERSDOC3, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$MEDCOST1, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$SMOKE100, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$AVEDRNK3, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$DRNK3GE5, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$EXERANY2, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$BPHIGH6, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$TOLDHI3, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$CVDINFR4, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$CVDCRHD4, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$CVDSTRK3, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$CHCKDNY2, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$DIABETE4, useNA = "ifany")
+```
+
+```{r}
+table(CDC_2023_subset$DIABTYPE, useNA = "ifany")
+```
+
+
+#### Deal with height in feet and inches and height in metric
+```{r}
+df <- data.frame(ID = c(501901, 501902))
+
+splitted <- t(sapply(df$ID, function(x) substring(x, first=c(1,2,4), last=c(1,3,6))))
+cbind(df, splitted)
+#      ID 1  2   3
+#1 501901 5 01 901
+#2 501902 5 01 902
+```

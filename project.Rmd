@@ -30,7 +30,7 @@ colSums(is.na(CDC_2023_subset))
 ### Convert columns (except for WEIGHT2 and HEIGHT3) to factors
 ```{r}
 col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-c(4,5, 12, 13)]
+col_names <- col_names[-c(4,5, 12)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), and 12 (DRNK3GE5)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
@@ -38,6 +38,7 @@ CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```{r}
 table(CDC_2023_subset$EDUCA, useNA = "ifany")
 ```
+
 ```{r}
 table(CDC_2023_subset$EMPLOY1, useNA = "ifany")
 ```
@@ -114,24 +115,16 @@ table(CDC_2023_subset$DIABETE4, useNA = "ifany")
 table(CDC_2023_subset$DIABTYPE, useNA = "ifany")
 ```
 
-
-#### Deal with height in feet and inches and height in metric
-```{r}
-df <- data.frame(ID = c(501901, 501902))
-
-splitted <- t(sapply(df$ID, function(x) substring(x, first=c(1,2,4), last=c(1,3,6))))
-cbind(df, splitted)
-#      ID 1  2   3
-#1 501901 5 01 901
-#2 501902 5 01 902
-```
-
-
 # Filter out rows with metric measurements (e.g., codes like 9061-9998 for metric values)
 ```{r}
 
 CDC_2023_subset <- CDC_2023_subset %>%
-  filter(!(HEIGHT3 >= 9061 & HEIGHT3 <= 9998))
+  filter(
+    !(HEIGHT3 >= 9000),
+    !(WEIGHT2 >=9000),
+    WEIGHT2 != 7777,       # Filter out any values where person refused or didn't know weight
+    HEIGHT3 != 7777
+    )
 
 # Extract feet and inches assuming HEIGHT3 values are in a format like '511' (5 feet, 11 inches)
 CDC_2023_subset <- CDC_2023_subset %>%
@@ -165,7 +158,7 @@ CDC_2023_subset <- CDC_2023_subset %>%
   filter(
     EDUCA != 9,             # Refused education level
     EMPLOY1 != 9,           # Refused employment status
-    INCOME3 != 99,          # Refused income level
+    INCOME3 != 77 & INCOME3 != 99,    # Don't know or refused income level
     PHYSHLTH != 77 & PHYSHLTH != 99,  # Don't know or refused physical health
     MENTHLTH != 77 & MENTHLTH != 99,  # Don't know or refused mental health
     PERSDOC3 != 7 & PERSDOC3 != 9,    # Don't know or refused personal doctor info
@@ -179,9 +172,20 @@ CDC_2023_subset <- CDC_2023_subset %>%
     CVDCRHD4 != 7 & CVDCRHD4 != 9,    # Don't know or refused coronary heart disease
     CVDSTRK3 != 7 & CVDSTRK3 != 9,    # Don't know or refused stroke history
     CHCKDNY2 != 7 & CHCKDNY2 != 9,    # Don't know or refused kidney disease
-    DIABETE4 != 7 & DIABETE4 != 9,    # Don't know or refused diabetes status
-    DIABTYPE != 7 & DIABTYPE != 9     # Don't know or refused diabetes type
+    DIABETE4 != 7 & DIABETE4 != 9     # Don't know or refused diabetes status
   )
 
 ```
 
+# Libraries for data visualizations
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+# Density plot for numeric columns
+```{r}
+CDC_2023_subset %>%
+  ggplot( aes(x=BMI)) +
+    geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8)
+```

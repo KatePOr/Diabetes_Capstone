@@ -248,7 +248,7 @@ CDC_2023_subset %>%
     geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8)
 ```
 
-## Get columns summaries for factor data after data cleaning
+## Get columns proportions for factor data after data cleaning
 ```{r}
 table <- table(CDC_2023_subset$EDUCA, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
@@ -339,7 +339,28 @@ table <- table(CDC_2023_subset$DIABETE4, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
 ```
 
+### DIABTYPE summary
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$DIABTYPE, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# 
+```
+
+## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis)
+```{r}
+# Summary of BMI column
+library(moments)
+print(summary(CDC_2023_subset$BMI))
+cat("Skewness is ", skewness(CDC_2023_subset$BMI), ". ")
+cat("Kurtosis is ", kurtosis(CDC_2023_subset$BMI), ".")
+
+# Histogram 
+BMI_summ <- CDC_2023_subset |> summarize(mean = mean(BMI), median = median(BMI)) #Calculate mean for graph
+ggplot(data = CDC_2023_subset, aes(x = BMI)) +
+  geom_histogram(aes(y= ..density..), binwidth = 0.1, fill="grey") +
+  geom_density() +
+  geom_vline(aes(xintercept = mean), BMI_summ, color = "red", linewidth = 0.7) +
+  geom_vline(aes(xintercept = median), BMI_summ, color = "blue", linewidth = 0.7)
 ```

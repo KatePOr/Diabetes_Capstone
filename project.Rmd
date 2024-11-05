@@ -239,6 +239,7 @@ CDC_2023_subset$DIABETE4 <- as.factor(CDC_2023_subset$DIABETE4)
 ```{r}
 library(ggplot2)
 library(dplyr)
+library(scales)
 ```
 
 ## Density plot for numeric columns
@@ -249,103 +250,369 @@ CDC_2023_subset %>%
 ```
 
 ## Get columns proportions for factor data after data cleaning
+
+### EDUCA
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$EDUCA, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=EDUCA, fill=EDUCA)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=EDUCA, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### EMPLOY1 (1:employed, 2: out of labor force, 3: unemployed)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$EMPLOY1, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=EMPLOY1, fill=EMPLOY1)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=EMPLOY1, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### INCOME3
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$INCOME3, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=INCOME3, fill=INCOME3)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=INCOME3, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### SEXVAR (1:male, 2:female)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$SEXVAR, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=SEXVAR, fill=SEXVAR)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=SEXVAR, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### PHYSHLTH (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$PHYSHLTH, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=PHYSHLTH, fill=PHYSHLTH)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=PHYSHLTH, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### MENTHLTH (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$MENTHLTH, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=MENTHLTH, fill=MENTHLTH)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=MENTHLTH, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### PERSDOC3 (1: 1 or more personal doctors, 2: none)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$PERSDOC3, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=PERSDOC3, fill=PERSDOC3)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=PERSDOC3, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### MEDCOST1 (1: med cost too high in last 12 months, 2: not)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$MEDCOST1, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=MEDCOST1, fill=MEDCOST1)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=MEDCOST1, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### SMOKE100 (1: smoked at least 100 cigarettes, 2: has not smoked more than 100 cigarettes)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$SMOKE100, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=SMOKE100, fill=SMOKE100)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=SMOKE100, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### DRNK3GE5 (0: No binge drinking in last 30 days, 1: yes, binge drinking in last 30 days)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$DRNK3GE5, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=DRNK3GE5, fill=DRNK3GE5)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=DRNK3GE5, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### EXERANY2 (1: yes,physical activity in last 30 days, 2: no physical activity in last 30 days)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$EXERANY2, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=EXERANY2, fill=EXERANY2)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=EXERANY2, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### BPHIGH6 (1: Told BP high, 2: BP high in pregnancy, 3: Not high, 4: borderline or pre-hypertenisve or elevated BP)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$BPHIGH6, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=BPHIGH6, fill=BPHIGH6)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=BPHIGH6, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
+### TOLDHI3 (1: high cholesterol, 2: not high)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$TOLDHI3, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=TOLDHI3, fill=TOLDHI3)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=TOLDHI3, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
+### CVDINFR4 (1: had heart attack, 2: no heart attack)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$CVDINFR4, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=CVDINFR4, fill=CVDINFR4)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=CVDINFR4, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
+### CVDCRHD4 (1: angina or coronary heart disease, 2: no)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$CVDCRHD4, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=CVDCRHD4, fill=CVDCRHD4)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=CVDCRHD4, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
+### CVDSTRK3 (1: had a stroke, 2: no)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$CVDSTRK3, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph overall
+ggplot(CDC_2023_subset, aes(x=CVDSTRK3, fill=CVDSTRK3)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=CVDSTRK3, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
+### CHCKDNY2 (1: had kidney disease, 2: no)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$CHCKDNY2, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph
+ggplot(CDC_2023_subset, aes(x=CHCKDNY2, fill=CHCKDNY2)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
+
+# Bar graph by diabetes
+CDC_2023_subset %>% 
+  group_by(DIABETE4) %>%
+  ggplot(aes(x=CHCKDNY2, fill=DIABETE4)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) +
+    geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
+### Diabetes (0: does not have diabetes, 1: has type 2 diabetes or prediabetes or borderline diabetes)
 ```{r}
+# Proportion summary
 table <- table(CDC_2023_subset$DIABETE4, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph
+ggplot(CDC_2023_subset, aes(x=DIABETE4, fill=DIABETE4)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
 ```
 
-### DIABTYPE summary
+### DIABTYPE summary (2: type 2 diabetes, NA: no diabetes)
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$DIABTYPE, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
 
-# 
+# Bar graph
+ggplot(CDC_2023_subset, aes(x=DIABTYPE, fill=DIABTYPE)) + 
+  geom_bar() + 
+  scale_y_continuous(labels = scales::comma)
 ```
 
 ## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis)

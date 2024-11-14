@@ -13,7 +13,7 @@ library(readr)
 CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 ```
 
-## Remove first blank column
+## Remove unused columns
 ```{r}
 CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
 ```

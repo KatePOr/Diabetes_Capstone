@@ -1,0 +1,99 @@
+---
+title: "Preprocessing and Feature Engineering"
+author: "Kate O'Rourke"
+date: "2024-11-14"
+output: pdf_document
+---
+# General Preprocessing Steps for Feature Engineering
+# Read in dataset
+```{r}
+library(readr)
+CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
+```
+
+# Remove unused columns
+```{r}
+CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
+```
+
+# Libraries for data visualizations and tables
+```{r}
+library(dplyr)
+library(caret) # used to split dataset
+```
+
+# Convert columns (except for BMI) to factors
+```{r}
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-19] # Column 19 (BMI)
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+# Function to normalize BMI column
+```{r}
+# Function to normalize specific columns based on dataset and columns specified
+normalize <- function(dataset, columns) {
+  dataset[, columns] <- scale(dataset[, columns],
+                              center = apply(dataset[, columns], 2, mean),
+                              scale = apply(dataset[, columns], 2, sd)
+                              )
+}
+```
+
+# Calculate test and training split
+```{r}
+## Written by Katherine S. Geist, PhD
+## Merrimack College, Massachusetts
+## Please do not distribute without attribution
+## https://github.com/ksgeist
+
+calcSplitRatio <- function(p = NA, df) {
+  ## @p  = the number of parameters. by default, if none are provided, the number of columns (predictors) in the dataset are used
+  ## @df = the dataframe that will be used for the analysis
+  
+  ## If the number of parameters isn't supplied, set it to the number of features minus 1 for the target
+  if(is.na(p)) {
+    p <- ncol(df) -1   ## COMMENT HERE
+  }
+  
+  ## Calculate the ideal number of testing set
+  test_N <- (1/sqrt(p))*nrow(df)
+  ## Turn that into a testing proportion
+  test_prop <- round((1/sqrt(p))*nrow(df)/nrow(df), 2)
+  ## And find the training proportion
+  train_prop <- 1-test_prop
+  
+  ## Tell us the results!
+  print(paste0("The ideal split ratio is ", train_prop, ":", test_prop, " training:testing"))
+  
+  ## Return the size of the training set
+  return(train_prop)
+}
+
+calcSplitRatio(p=NA, CDC_2023_subset)
+```
+Dataset will be split into 76% training and 24% testing.
+
+# Split dataset into training and test sets
+```{r}
+training <- createDataPartition(CDC_2023_subset$DIABETE4,
+                                         p = 0.76,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_subset[training, ]
+CDC_2023_test <- CDC_2023_subset[-training, ]
+```
+
+# Normalize BMI in training and test sets
+```{r}
+columns = 19
+normalize(CDC_2023_training, columns)
+normalize(CDC_2023_test, columns)
+```
+
+# Check proportions of DIABETE4 in training and test sets
+```{r}
+prop.table(table(CDC_2023_training$DIABETE4))
+prop.table(table(CDC_2023_test$DIABETE4))
+```

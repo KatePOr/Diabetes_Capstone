@@ -5,31 +5,32 @@ date: "2024-11-14"
 output: pdf_document
 ---
 # General Preprocessing Steps for Feature Engineering
-# Read in dataset
+
+# Libraries
 ```{r}
+library(dplyr)
+library(caret) # used to split dataset
 library(readr)
+```
+
+# Read in dataset - KO
+```{r}
 CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 ```
 
-# Remove unused columns
+# Remove unused columns - KO
 ```{r}
 CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
 ```
 
-# Libraries for data visualizations and tables
-```{r}
-library(dplyr)
-library(caret) # used to split dataset
-```
-
-# Convert columns (except for BMI) to factors
+# Convert columns (except for BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-19] # Column 19 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
-# Function to normalize BMI column
+# Function to normalize BMI column - KO
 ```{r}
 # Function to normalize specific columns based on dataset and columns specified
 normalize <- function(dataset, columns) {
@@ -40,7 +41,7 @@ normalize <- function(dataset, columns) {
 }
 ```
 
-# Calculate test and training split
+# Calculate test and training split - KO (function sourced from Katherine S. Geist)
 ```{r}
 ## Written by Katherine S. Geist, PhD
 ## Merrimack College, Massachusetts
@@ -74,7 +75,7 @@ calcSplitRatio(p=NA, CDC_2023_subset)
 ```
 Dataset will be split into 76% training and 24% testing.
 
-# Split dataset into training and test sets
+# Split dataset into training and test sets - KO
 ```{r}
 training <- createDataPartition(CDC_2023_subset$DIABETE4,
                                          p = 0.76,
@@ -85,14 +86,14 @@ CDC_2023_training <- CDC_2023_subset[training, ]
 CDC_2023_test <- CDC_2023_subset[-training, ]
 ```
 
-# Normalize BMI in training and test sets
+# Normalize BMI in training and test sets - KO
 ```{r}
 columns = 19
 normalize(CDC_2023_training, columns)
 normalize(CDC_2023_test, columns)
 ```
 
-# Check proportions of DIABETE4 in training and test sets
+# Check proportions of DIABETE4 in training and test sets - KO
 ```{r}
 prop.table(table(CDC_2023_training$DIABETE4))
 prop.table(table(CDC_2023_test$DIABETE4))

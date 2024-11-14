@@ -7,13 +7,13 @@ output: pdf_document
 
 # Exploratory Data Analysis
 
-## Read in dataset
+## Read in dataset - KO
 ```{r}
 library(readr)
 CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 ```
 
-## Remove unused columns
+## Remove unused columns - KO
 ```{r}
 CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
 ```
@@ -30,22 +30,22 @@ library(gtsummary)
 library(stringr)
 ```
 
-### Convert columns (except for BMI) to factors
+### Convert columns (except for BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-19] # Column 19 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
-## Get columns proportions for factor data after data cleaning
+## Get columns proportions for factor data after data cleaning - KO
 
-### Column proportion summaries
+### Column proportion summaries - KO
 ```{r}
 CDC_2023_subset %>%
   tbl_summary()
 ```
 
-### EDUCA summary
+### EDUCA summary - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$EDUCA, useNA = "ifany")
@@ -65,7 +65,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### EMPLOY1 summary (1:employed, 2: out of labor force, 3: unemployed)
+### EMPLOY1 summary (1:employed, 2: out of labor force, 3: unemployed) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$EMPLOY1, useNA = "ifany")
@@ -85,7 +85,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### INCOME3 summary
+### INCOME3 summary - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$INCOME3, useNA = "ifany")
@@ -105,7 +105,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### SEXVAR summary (1:male, 2:female)
+### SEXVAR summary (1:male, 2:female) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$SEXVAR, useNA = "ifany")
@@ -125,7 +125,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### PHYSHLTH summary (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health)
+### PHYSHLTH summary (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$PHYSHLTH, useNA = "ifany")
@@ -145,7 +145,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### MENTHLTH summary (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health)
+### MENTHLTH summary (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$MENTHLTH, useNA = "ifany")
@@ -165,7 +165,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### PERSDOC3 summary (1: 1 or more personal doctors, 2: none)
+### PERSDOC3 summary (1: 1 or more personal doctors, 2: none)- KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$PERSDOC3, useNA = "ifany")
@@ -185,7 +185,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### MEDCOST1 summary (1: med cost too high in last 12 months, 2: not)
+### MEDCOST1 summary (1: med cost too high in last 12 months, 2: not) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$MEDCOST1, useNA = "ifany")
@@ -205,7 +205,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### SMOKE100 summary (1: smoked at least 100 cigarettes, 2: has not smoked more than 100 cigarettes)
+### SMOKE100 summary (1: smoked at least 100 cigarettes, 2: has not smoked more than 100 cigarettes) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$SMOKE100, useNA = "ifany")
@@ -225,7 +225,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### DRNK3GE5 summary (0: No binge drinking in last 30 days, 1: yes, binge drinking in last 30 days)
+### DRNK3GE5 summary (0: No binge drinking in last 30 days, 1: yes, binge drinking in last 30 days) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$DRNK3GE5, useNA = "ifany")
@@ -245,7 +245,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### EXERANY2 summary (1: yes,physical activity in last 30 days, 2: no physical activity in last 30 days)
+### EXERANY2 summary (1: yes,physical activity in last 30 days, 2: no physical activity in last 30 days) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$EXERANY2, useNA = "ifany")
@@ -265,7 +265,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### BPHIGH6 summary (1: Told BP high, 2: BP high in pregnancy, 3: Not high, 4: borderline or pre-hypertenisve or elevated BP)
+### BPHIGH6 summary (1: Told BP high, 2: BP high in pregnancy, 3: Not high, 4: borderline or pre-hypertenisve or elevated BP) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$BPHIGH6, useNA = "ifany")
@@ -285,7 +285,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### TOLDHI3 summary (1: high cholesterol, 2: not high)
+### TOLDHI3 summary (1: high cholesterol, 2: not high) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$TOLDHI3, useNA = "ifany")
@@ -305,7 +305,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
-### CVDINFR4 summary (1: had heart attack, 2: no heart attack)
+### CVDINFR4 summary (1: had heart attack, 2: no heart attack) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$CVDINFR4, useNA = "ifany")
@@ -325,7 +325,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
-### CVDCRHD4 summary (1: angina or coronary heart disease, 2: no)
+### CVDCRHD4 summary (1: angina or coronary heart disease, 2: no) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$CVDCRHD4, useNA = "ifany")
@@ -345,7 +345,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
-### CVDSTRK3 summary (1: had a stroke, 2: no)
+### CVDSTRK3 summary (1: had a stroke, 2: no) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$CVDSTRK3, useNA = "ifany")
@@ -365,7 +365,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
-### CHCKDNY2 summary (1: had kidney disease, 2: no)
+### CHCKDNY2 summary (1: had kidney disease, 2: no) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$CHCKDNY2, useNA = "ifany")
@@ -385,7 +385,7 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0, size=3)
 ```
 
-### Diabetes summary (0: does not have diabetes, 1: has type 2 diabetes or prediabetes or borderline diabetes)
+### Diabetes summary (0: does not have diabetes, 1: has type 2 diabetes or prediabetes or borderline diabetes) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$DIABETE4, useNA = "ifany")
@@ -397,7 +397,7 @@ ggplot(CDC_2023_subset, aes(x=DIABETE4, fill=DIABETE4)) +
   scale_y_continuous(labels = scales::comma)
 ```
 
-## Compare Diabetes and Exercise to Determine the Impact on Type 2 Diabetes
+## Compare Diabetes and Exercise to Determine the Impact on Type 2 Diabetes - SG
 ```{r}
 # Convert DIABETE4 and EXERANY2 to correct types
 CDC_2023_subset$EXERANY2 <- as.factor(CDC_2023_subset$EXERANY2)
@@ -433,12 +433,12 @@ ggplot(exercise_bmi_diabetes_data, aes(x = Exercise, y = Diabetes_Prevalence, fi
 )
 ```
 
-### Convert DIABETE4 back to factor
+### Convert DIABETE4 back to factor - KO
 ```{r}
 CDC_2023_subset$DIABETE4 <- as.factor(CDC_2023_subset$DIABETE4)
 ```
 
-## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis) and histogram for all and type 2 diabetes within BMI
+## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis) and histogram for all and type 2 diabetes within BMI - KO
 ```{r}
 # Summary of BMI column
 library(moments)
@@ -482,14 +482,14 @@ ggplot(data=BMI_diab, aes(x = BMI)) +
     xlim(0,120) 
 ```
 
-## Proportion tables split by social factors, demographic characteristics, and health conditions
+## Proportion tables split by social factors, demographic characteristics, and health conditions - KO
 
-### Change column names for simpler axes and legends
+### Change column names for simpler axes and legends - KO
 ```{r}
 colnames(CDC_2023_subset) <- c("Education", "Employment_Status", "Income", "Sex", "Physical_Health", "Mental_Health", "Personal_Doctor", "Not_Afford_Doctor", "Smoked_100_Pkgs", "Binge_Drinking", "Exercised", "HighBP", "High_Cholesterol", "Myocardial_Infarction", "Heart_Disease", "Stroke", "Kidney_Disease", "Type_2_Diabetes", "BMI", "BMI_Category")
 ```
 
-### Proportion tables for each of the categories (Social Factors, Demographics, and Diseases) split by type 2 diabetes
+### Proportion tables for each of the categories (Social Factors, Demographics, and Diseases) split by type 2 diabetes - KO
 ```{r}
 # Social factors
 CDC_2023_subset %>%
@@ -575,8 +575,8 @@ CDC_2023_subset %>%
   modify_header()
 ```
 
-## Comparing BMI with Education, Income, Employment, Ability to afford doctor, and Type 2 diabetes
-### Quasi random plot shown to illustrate Education vs BMI in a violin plot format
+## Comparing BMI with Education, Income, Employment, Ability to afford doctor, and Type 2 diabetes - KO
+### Quasi random plot shown to illustrate Education vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
@@ -599,7 +599,7 @@ CDC_2023_subset %>%
 ```
 
 
-### Quasi random plot shown to illustrate Income vs BMI in a violin plot format
+### Quasi random plot shown to illustrate Income vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
@@ -626,7 +626,7 @@ CDC_2023_subset %>%
 ```
 
 
-### Quasi random plot shown to illustrate Employment_Status vs BMI in a violin plot format
+### Quasi random plot shown to illustrate Employment_Status vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
@@ -644,7 +644,7 @@ CDC_2023_subset %>%
 ```
 
 
-### Quasi random plot shown to illustrate Not_Afford_Doctor vs BMI in a violin plot format
+### Quasi random plot shown to illustrate Not_Afford_Doctor vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
@@ -661,7 +661,7 @@ CDC_2023_subset %>%
 ```
 
 
-### Quasi random plot shown to illustrate Type_2_Diabetes vs BMI in a violin plot format
+### Quasi random plot shown to illustrate Type_2_Diabetes vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
@@ -678,9 +678,9 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-## Compare education with diseases
+## Compare education with diseases - KO
 
-### Compare Education with Type_2_Diabetes using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with Type_2_Diabetes using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked Bar Plot
 CDC_2023_subset %>%
@@ -725,7 +725,7 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Compare Education with HighBP using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with HighBP using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -770,7 +770,7 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Compare Education with High_Cholesterol using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with High_Cholesterol using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -815,7 +815,7 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Compare Education with Myocardial_Infarction using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with Myocardial_Infarction using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -861,7 +861,7 @@ CDC_2023_subset %>%
 ```
 
 
-### Compare Education with Heart_Disease using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with Heart_Disease using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -906,7 +906,7 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Compare Education with Stroke using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with Stroke using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -951,7 +951,7 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Compare Education with Kidney_Disease using bar plots (stacked bar for overall numbers and fill bar plots for proportions)
+### Compare Education with Kidney_Disease using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
 ```{r}
 # Stacked bar plot
 CDC_2023_subset %>%
@@ -996,9 +996,9 @@ CDC_2023_subset %>%
     coord_flip()
 ```
 
-### Heatmap for Correlation
+### Heatmap for Correlation - KO
 
-#### Disease
+#### Disease - KO
 ```{r}
 library(ggcorrplot)
 # Select diseases columns
@@ -1010,7 +1010,7 @@ model.matrix(~0+., data=subset) %>%
   ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
 ```
 
-#### Social Factors
+#### Social Factors - KO
 ```{r}
 # Select social factors columns
 subset <- CDC_2023_subset %>%
@@ -1021,7 +1021,7 @@ model.matrix(~0+., data=subset) %>%
   ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
 ```
 
-#### Demographics
+#### Demographics - KO
 ```{r}
 # Select demographics variables
 subset <- CDC_2023_subset %>%
@@ -1033,9 +1033,9 @@ model.matrix(~0+., data=subset) %>%
 ```
 
 ## Plots to compare relationship between Demographic Variables
-### Different size dots for different counts (use to see if there is a relationship between the two variables)
+### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 
-### Comapre Employment_Status, Education, and Sex
+### Comapre Employment_Status, Education, and Sex - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Employment_Status, Sex) %>%
@@ -1075,7 +1075,7 @@ ggplot(df_summary, aes(x = Education, y = Employment_Status, size=Count, color=C
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Comapre Income, Education, and Sex
+### Comapre Income, Education, and Sex - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Income, Sex) %>%
@@ -1099,10 +1099,10 @@ ggplot(df_summary, aes(x = Education, y = Income, size=Count, color=Count)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-## Plots to compare relationship between Demographic and Social Factors Variables
-### Different size dots for different counts (use to see if there is a relationship between the two variables)
+## Plots to compare relationship between Demographic and Social Factors Variables - KO
+### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 
-### Comapre Mental_Health, Education, and Sex
+### Comapre Mental_Health, Education, and Sex - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Mental_Health, Sex) %>%
@@ -1130,7 +1130,7 @@ ggplot(df_summary, aes(x = Education, y = Mental_Health, size=Count, color=Count
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Comapre Not_Afford_Doctor, Education, and Sex
+### Comapre Not_Afford_Doctor, Education, and Sex - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Not_Afford_Doctor, Sex) %>%
@@ -1158,7 +1158,7 @@ ggplot(df_summary, aes(x = Education, y = Not_Afford_Doctor, size=Count, color=C
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Compare Physical_Health, Education, and Sex
+### Compare Physical_Health, Education, and Sex - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Physical_Health, Sex) %>%
@@ -1189,7 +1189,7 @@ ggplot(df_summary, aes(x = Education, y = Physical_Health, size=Count, color=Cou
 ```
 
 ### Plots to compare relationship between Type 2 Diabetes and Kidney Disease
-#### Different size dots for different counts (use to see if there is a relationship between the two variables)
+#### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Type_2_Diabetes, Kidney_Disease, Sex) %>%

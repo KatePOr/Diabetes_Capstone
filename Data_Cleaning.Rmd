@@ -5,16 +5,19 @@ date: "2024-10-29"
 output: pdf_document
 ---
 
+# Load Libraries
 ```{r}
 library(tidyverse)
 library(haven)
+library(gtsummary)
 ```
 
+# Read in .XPT data file - KO
 ```{r}
 CDC_2023 <- read_xpt('LLCP2023.XPT')
 ```
 
-#### Remove unused columns
+#### Remove unused columns - KO
 ```{r}
 CDC_2023_subset = subset(CDC_2023, 
                          select = c(EDUCA, EMPLOY1, INCOME3, WEIGHT2, HEIGHT3, SEXVAR, PHYSHLTH, MENTHLTH, PERSDOC3,
@@ -23,22 +26,19 @@ CDC_2023_subset = subset(CDC_2023,
                          )
 ```
 
+#### Show NA values - KO
 ```{r}
 colSums(is.na(CDC_2023_subset))
 ```
 
-### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH) to factors
+### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-c(4, 5, 7, 8, 12)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH) and 12 (DRNK3GE5)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
-### Get columns summaries for factor data
-```{r}
-library(gtsummary)
-```
-
+### Get columns summaries for factor data - KO
 ```{r}
 CDC_2023_subset %>%
   tbl_summary()
@@ -47,9 +47,8 @@ CDC_2023_subset %>%
 
 # Data Cleaning
 
-## Filter out rows with metric measurements (e.g., codes like 9061-9998 for metric values)
+## Filter out rows with metric measurements (e.g., codes like 9061-9998 for metric values) - SG
 ```{r}
-
 CDC_2023_subset <- CDC_2023_subset %>%
   filter(
     !(HEIGHT3 >= 9000),
@@ -68,13 +67,13 @@ CDC_2023_subset <- CDC_2023_subset %>%
   select(-feet, -inches) 
 ```
 
-## Calculate BMI and add it as a new column
+## Calculate BMI and add it as a new column - SG
 ```{r}
 CDC_2023_subset <- CDC_2023_subset %>%
   mutate(BMI = (WEIGHT2 * 703) / (height_inches^2))
 ```
 
-## Filter to include individuals with type 2 diabetes, prediabetes, or no diabetes
+## Filter to include individuals with type 2 diabetes, prediabetes, or no diabetes - SG
 ```{r}
 CDC_2023_subset <- CDC_2023_subset %>%
   filter(
@@ -84,7 +83,7 @@ CDC_2023_subset <- CDC_2023_subset %>%
   )
 ```
 
-## Remove rows with missing or refused data codes
+## Remove rows with missing or refused data codes - SG
 ```{r}
 CDC_2023_subset <- CDC_2023_subset %>%
   filter(
@@ -109,7 +108,7 @@ CDC_2023_subset <- CDC_2023_subset %>%
 
 ```
 
-## Simplify variables
+## Simplify variables - KO
 ```{r}
 # EMPLOY1 is simplified into 1 (employed: employed for wages, self-employed), 2 (out of labor force: homemaker, student, retired), 3 (unemployed: our of work for 1 year or more, out of work for less than 1 year, unable to work)
 CDC_2023_subset$EMPLOY1 <- as.numeric(CDC_2023_subset$EMPLOY1)
@@ -154,7 +153,7 @@ CDC_2023_subset$BPHIGH6 <- replace(CDC_2023_subset$BPHIGH6, CDC_2023_subset$BPHI
 CDC_2023_subset$BPHIGH6 <- as.factor(CDC_2023_subset$BPHIGH6)
 ```
 
-## Export new data file as cvs file
+## Export new data file as cvs file - KO
 ```{r}
 write.csv(CDC_2023_subset, "CDC_2023_cleaned.csv")
 ```

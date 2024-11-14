@@ -1,0 +1,160 @@
+---
+title: "Project"
+author: "Kate O'Rourke"
+date: "2024-10-29"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+```
+
+```{r}
+CDC_2023 <- read_xpt('LLCP2023.XPT')
+```
+
+#### Remove unused columns
+```{r}
+CDC_2023_subset = subset(CDC_2023, 
+                         select = c(EDUCA, EMPLOY1, INCOME3, WEIGHT2, HEIGHT3, SEXVAR, PHYSHLTH, MENTHLTH, PERSDOC3,
+                                               MEDCOST1, SMOKE100, DRNK3GE5, EXERANY2, BPHIGH6, TOLDHI3, CVDINFR4,
+                                               CVDCRHD4, CVDSTRK3, CHCKDNY2, DIABETE4, DIABTYPE)
+                         )
+```
+
+```{r}
+colSums(is.na(CDC_2023_subset))
+```
+
+### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH) to factors
+```{r}
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-c(4, 5, 7, 8, 12)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH) and 12 (DRNK3GE5)
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+### Get columns summaries for factor data
+```{r}
+library(gtsummary)
+```
+
+```{r}
+CDC_2023_subset %>%
+  tbl_summary()
+```
+
+
+# Data Cleaning
+
+## Filter out rows with metric measurements (e.g., codes like 9061-9998 for metric values)
+```{r}
+
+CDC_2023_subset <- CDC_2023_subset %>%
+  filter(
+    !(HEIGHT3 >= 9000),
+    !(WEIGHT2 >=9000),
+    WEIGHT2 != 7777,       # Filter out any values where person refused or didn't know weight
+    HEIGHT3 != 7777
+    )
+
+# Extract feet and inches assuming HEIGHT3 values are in a format like '511' (5 feet, 11 inches)
+CDC_2023_subset <- CDC_2023_subset %>%
+  mutate(
+    feet = as.numeric(substr(HEIGHT3, 1, 1)),  # Extract first digit as feet
+    inches = as.numeric(substr(HEIGHT3, 2, 3)),  # Extract next two as inches
+    height_inches = feet * 12 + inches  # Convert total height to inches
+  ) %>%
+  select(-feet, -inches) 
+```
+
+## Calculate BMI and add it as a new column
+```{r}
+CDC_2023_subset <- CDC_2023_subset %>%
+  mutate(BMI = (WEIGHT2 * 703) / (height_inches^2))
+```
+
+## Filter to include individuals with type 2 diabetes, prediabetes, or no diabetes
+```{r}
+CDC_2023_subset <- CDC_2023_subset %>%
+  filter(
+    (DIABETE4 == 1 & DIABTYPE == 2) |  # Keep those with type 2 diabetes
+    (DIABETE4 == 4) |                  # Keep those with prediabetes
+    (DIABETE4 == 3)                    # Keep those with no diabetes
+  )
+```
+
+## Remove rows with missing or refused data codes
+```{r}
+CDC_2023_subset <- CDC_2023_subset %>%
+  filter(
+    EDUCA != 9,             # Refused education level
+    EMPLOY1 != 9,           # Refused employment status
+    INCOME3 != 77 & INCOME3 != 99,    # Don't know or refused income level
+    PHYSHLTH != 77 & PHYSHLTH != 99,  # Don't know or refused physical health
+    MENTHLTH != 77 & MENTHLTH != 99,  # Don't know or refused mental health
+    PERSDOC3 != 7 & PERSDOC3 != 9,    # Don't know or refused personal doctor info
+    MEDCOST1 != 7 & MEDCOST1 != 9,    # Don't know or refused medical cost
+    SMOKE100 != 7 & SMOKE100 != 9,    # Don't know or refused smoking info
+    DRNK3GE5 != 77 & DRNK3GE5 != 99,  # Don't know or refused binge drinking info
+    EXERANY2 != 7 & EXERANY2 != 9,    # Don't know or refused exercise info
+    BPHIGH6 != 7 & BPHIGH6 != 9,      # Don't know or refused high blood pressure
+    TOLDHI3 != 7 & TOLDHI3 != 9,      # Don't know or refused high cholesterol
+    CVDINFR4 != 7 & CVDINFR4 != 9,    # Don't know or refused heart attack history
+    CVDCRHD4 != 7 & CVDCRHD4 != 9,    # Don't know or refused coronary heart disease
+    CVDSTRK3 != 7 & CVDSTRK3 != 9,    # Don't know or refused stroke history
+    CHCKDNY2 != 7 & CHCKDNY2 != 9,    # Don't know or refused kidney disease
+    DIABETE4 != 7 & DIABETE4 != 9     # Don't know or refused diabetes status
+  )
+
+```
+
+## Simplify variables
+```{r}
+# EMPLOY1 is simplified into 1 (employed: employed for wages, self-employed), 2 (out of labor force: homemaker, student, retired), 3 (unemployed: our of work for 1 year or more, out of work for less than 1 year, unable to work)
+CDC_2023_subset$EMPLOY1 <- as.numeric(CDC_2023_subset$EMPLOY1)
+CDC_2023_subset$EMPLOY1 <- replace(CDC_2023_subset$EMPLOY1, CDC_2023_subset$EMPLOY1 == 1 | CDC_2023_subset$EMPLOY1 == 2, 1) 
+CDC_2023_subset$EMPLOY1 <- replace(CDC_2023_subset$EMPLOY1, CDC_2023_subset$EMPLOY1 == 5 | CDC_2023_subset$EMPLOY1 == 6 | CDC_2023_subset$EMPLOY1 == 7, 2) 
+CDC_2023_subset$EMPLOY1 <- replace(CDC_2023_subset$EMPLOY1, CDC_2023_subset$EMPLOY1 == 3 | CDC_2023_subset$EMPLOY1 == 4 | CDC_2023_subset$EMPLOY1 == 8, 3) 
+CDC_2023_subset$EMPLOY1 <- as.factor(CDC_2023_subset$EMPLOY1)
+
+# PHYSHLTH is simplified to 1 (zero days when physical health was not good - 88), 2 (1 to 13 days when physical health is not good), 3 (14+ days when physical health is not good)
+CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH == 88, 0)
+CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 1 & CDC_2023_subset$PHYSHLTH < 14, 1) 
+CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 14, 2) 
+CDC_2023_subset$PHYSHLTH <- as.factor(CDC_2023_subset$PHYSHLTH)
+
+# MENTHLTH is simplified to 1 (zero days when mental health was not good - 88), 2 (1 to 13 days when mental health is not good), 3 (14+ days when mental health is not good)
+CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH == 88, 0) 
+CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 1 & CDC_2023_subset$MENTHLTH < 14, 1)
+CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 14, 2) 
+CDC_2023_subset$MENTHLTH <- as.factor(CDC_2023_subset$MENTHLTH)
+
+# PERSDOC3 will be simplified to combine 1 and 2 to indicate that the person has at least one personal doctor and 3 will be converted to 2
+CDC_2023_subset$PERSDOC3 <- as.numeric(CDC_2023_subset$PERSDOC3)
+CDC_2023_subset$PERSDOC3 <- replace(CDC_2023_subset$PERSDOC3, CDC_2023_subset$PERSDOC3 == 1 & CDC_2023_subset$PERSDOC3 == 2, 1) 
+CDC_2023_subset$PERSDOC3 <- replace(CDC_2023_subset$PERSDOC3, CDC_2023_subset$PERSDOC3 == 3, 2)
+CDC_2023_subset$PERSDOC3 <- as.factor(CDC_2023_subset$PERSDOC3)
+
+# DRNK3GE5 will be simplified to indicate that a person has been binge drinking at least 1 time in last 30 days with 1 and no drinks will be indicated by 0 (originally indicated by 88)
+CDC_2023_subset$DRNK3GE5 <- replace(CDC_2023_subset$DRNK3GE5, CDC_2023_subset$DRNK3GE5 == 88, 0)
+CDC_2023_subset$DRNK3GE5 <- replace(CDC_2023_subset$DRNK3GE5, CDC_2023_subset$DRNK3GE5 >= 1, 1) 
+CDC_2023_subset$DRNK3GE5 <- as.factor(CDC_2023_subset$DRNK3GE5)
+
+# DIABETE4 will be simplified so 0 indicates the individual does not have diabetes (3) and 1 indicating the individual has type 2 diabetes or pre-diabetes or borderline diabetes (1 and 2 for DIABTYPE or 4)
+CDC_2023_subset$DIABETE4 <- as.numeric(CDC_2023_subset$DIABETE4)
+CDC_2023_subset$DIABETE4 <- replace(CDC_2023_subset$DIABETE4, CDC_2023_subset$DIABETE4 == 3, 0)
+CDC_2023_subset$DIABETE4 <- replace(CDC_2023_subset$DIABETE4, CDC_2023_subset$DIABETE4 == 1 | CDC_2023_subset$DIABETE4 == 4, 1)
+CDC_2023_subset$DIABETE4 <- as.factor(CDC_2023_subset$DIABETE4)
+
+# BPHIGH6 will be simplified so 1 indicates one has had high or borderline high or pre-hypertensive or elevated blood pressure
+CDC_2023_subset$BPHIGH6 <- as.numeric(CDC_2023_subset$BPHIGH6)
+CDC_2023_subset$BPHIGH6 <- replace(CDC_2023_subset$BPHIGH6, CDC_2023_subset$BPHIGH6 == 2 | CDC_2023_subset$BPHIGH6 == 3, 2)
+CDC_2023_subset$BPHIGH6 <- replace(CDC_2023_subset$BPHIGH6, CDC_2023_subset$BPHIGH6 == 1 | CDC_2023_subset$BPHIGH6 == 4, 1)
+CDC_2023_subset$BPHIGH6 <- as.factor(CDC_2023_subset$BPHIGH6)
+```
+
+## Export new data file as cvs file
+```{r}
+write.csv(CDC_2023_subset, "CDC_2023_cleaned.csv")
+```

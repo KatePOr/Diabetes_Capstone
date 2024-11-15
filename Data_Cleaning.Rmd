@@ -22,7 +22,7 @@ CDC_2023 <- read_xpt('LLCP2023.XPT')
 CDC_2023_subset = subset(CDC_2023, 
                          select = c(EDUCA, EMPLOY1, INCOME3, WEIGHT2, HEIGHT3, SEXVAR, PHYSHLTH, MENTHLTH, PERSDOC3,
                                                MEDCOST1, SMOKE100, DRNK3GE5, EXERANY2, BPHIGH6, TOLDHI3, CVDINFR4,
-                                               CVDCRHD4, CVDSTRK3, CHCKDNY2, DIABETE4, DIABTYPE)
+                                               CVDCRHD4, CVDSTRK3, CHCKDNY2, DIABETE4, DIABTYPE, `_AGE80`)
                          )
 ```
 
@@ -34,7 +34,7 @@ colSums(is.na(CDC_2023_subset))
 ### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-c(4, 5, 7, 8, 12)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH) and 12 (DRNK3GE5)
+col_names <- col_names[-c(4, 5, 7, 8, 12, 22)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH) and 12 (DRNK3GE5)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
@@ -103,7 +103,8 @@ CDC_2023_subset <- CDC_2023_subset %>%
     CVDCRHD4 != 7 & CVDCRHD4 != 9,    # Don't know or refused coronary heart disease
     CVDSTRK3 != 7 & CVDSTRK3 != 9,    # Don't know or refused stroke history
     CHCKDNY2 != 7 & CHCKDNY2 != 9,    # Don't know or refused kidney disease
-    DIABETE4 != 7 & DIABETE4 != 9     # Don't know or refused diabetes status
+    DIABETE4 != 7 & DIABETE4 != 9,    # Don't know or refused diabetes status
+    `_AGE80` != 7 & `_AGE80` != 9     # Don't know or refused age
   )
 
 ```
@@ -119,15 +120,15 @@ CDC_2023_subset$EMPLOY1 <- as.factor(CDC_2023_subset$EMPLOY1)
 
 # PHYSHLTH is simplified to 1 (zero days when physical health was not good - 88), 2 (1 to 13 days when physical health is not good), 3 (14+ days when physical health is not good)
 CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH == 88, 0)
-CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 1 & CDC_2023_subset$PHYSHLTH < 14, 1) 
-CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 14, 2) 
-CDC_2023_subset$PHYSHLTH <- as.factor(CDC_2023_subset$PHYSHLTH)
+#CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 1 & #CDC_2023_subset$PHYSHLTH < 14, 1) 
+#CDC_2023_subset$PHYSHLTH <- replace(CDC_2023_subset$PHYSHLTH, CDC_2023_subset$PHYSHLTH >= 14, 2) 
+#CDC_2023_subset$PHYSHLTH <- as.factor(CDC_2023_subset$PHYSHLTH)
 
 # MENTHLTH is simplified to 1 (zero days when mental health was not good - 88), 2 (1 to 13 days when mental health is not good), 3 (14+ days when mental health is not good)
 CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH == 88, 0) 
-CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 1 & CDC_2023_subset$MENTHLTH < 14, 1)
-CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 14, 2) 
-CDC_2023_subset$MENTHLTH <- as.factor(CDC_2023_subset$MENTHLTH)
+#CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 1 & CDC_2023_subset$MENTHLTH < 14, 1)
+#CDC_2023_subset$MENTHLTH <- replace(CDC_2023_subset$MENTHLTH, CDC_2023_subset$MENTHLTH >= 14, 2) 
+#CDC_2023_subset$MENTHLTH <- as.factor(CDC_2023_subset$MENTHLTH)
 
 # PERSDOC3 will be simplified to combine 1 and 2 to indicate that the person has at least one personal doctor and 3 will be converted to 2
 CDC_2023_subset$PERSDOC3 <- as.numeric(CDC_2023_subset$PERSDOC3)
@@ -137,8 +138,8 @@ CDC_2023_subset$PERSDOC3 <- as.factor(CDC_2023_subset$PERSDOC3)
 
 # DRNK3GE5 will be simplified to indicate that a person has been binge drinking at least 1 time in last 30 days with 1 and no drinks will be indicated by 0 (originally indicated by 88)
 CDC_2023_subset$DRNK3GE5 <- replace(CDC_2023_subset$DRNK3GE5, CDC_2023_subset$DRNK3GE5 == 88, 0)
-CDC_2023_subset$DRNK3GE5 <- replace(CDC_2023_subset$DRNK3GE5, CDC_2023_subset$DRNK3GE5 >= 1, 1) 
-CDC_2023_subset$DRNK3GE5 <- as.factor(CDC_2023_subset$DRNK3GE5)
+#CDC_2023_subset$DRNK3GE5 <- replace(CDC_2023_subset$DRNK3GE5, CDC_2023_subset$DRNK3GE5 >= 1, 1) 
+#CDC_2023_subset$DRNK3GE5 <- as.factor(CDC_2023_subset$DRNK3GE5)
 
 # DIABETE4 will be simplified so 0 indicates the individual does not have diabetes (3) and 1 indicating the individual has type 2 diabetes or pre-diabetes or borderline diabetes (1 and 2 for DIABTYPE or 4)
 CDC_2023_subset$DIABETE4 <- as.numeric(CDC_2023_subset$DIABETE4)

@@ -13,9 +13,9 @@ library(readr)
 CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 ```
 
-## Remove unused columns - KO
+## Remove unused columns - KO & SG
 ```{r}
-CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
+CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 24) )
 ```
 
 ## Libraries for data visualizations and tables
@@ -30,11 +30,14 @@ library(gtsummary)
 library(stringr)
 ```
 
-### Convert columns (except for BMI) to factors - KO
+### Convert columns (except for AGE & BMI) to factors - KO & SG
 ```{r}
-col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-19] # Column 19 (BMI)
-CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+# Exclude columns 20 and 21 (assuming these are AGE and BMI)
+col_names <- col_names[-c(20, 21)]
+
+# Convert all other columns to factors
+CDC_2023_subset[, col_names] <- lapply(CDC_2023_subset[, col_names], factor)
+
 ```
 
 ## Get columns proportions for factor data after data cleaning - KO

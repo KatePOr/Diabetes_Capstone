@@ -98,3 +98,61 @@ normalize(CDC_2023_test, columns)
 prop.table(table(CDC_2023_training$DIABETE4))
 prop.table(table(CDC_2023_test$DIABETE4))
 ```
+
+### Lasso Regression - SG
+
+# Install and load the glmnet package
+```{r}
+install.packages("glmnet")
+library(glmnet)
+```
+
+# Prepare training and test datasets - SG
+```{r}
+CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]
+
+
+```
+
+# Remove the response variable (DIABETE4) from predictors - SG
+```{r}
+
+X_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training)[,-1]  # Exclude intercept
+y_train <- CDC_2023_training$DIABETE4
+
+X_test <- model.matrix(DIABETE4 ~ ., data = CDC_2023_test)[,-1]  # Exclude intercept
+y_test <- CDC_2023_test$DIABETE4
+```
+
+
+# Perform Lasso regression with cross-validation - SG
+```{r}
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
+
+# Find the best lambda value
+best_lambda <- lasso_model$lambda.min
+cat("Best lambda: ", best_lambda, "\n")
+
+# Fit the Lasso model with the best lambda
+final_lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = best_lambda, family = "binomial")
+
+# Predict on the test set
+predictions <- predict(final_lasso_model, s = best_lambda, newx = X_test, type = "response")
+
+# Convert predictions to binary outcomes
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# Confusion matrix
+conf_matrix <- table(Predicted = predicted_classes, Actual = y_test)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Calculate accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Accuracy: ", accuracy, "\n")
+```
+

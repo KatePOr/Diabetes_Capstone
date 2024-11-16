@@ -31,10 +31,10 @@ CDC_2023_subset = subset(CDC_2023,
 colSums(is.na(CDC_2023_subset))
 ```
 
-### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH) to factors - KO
+### Convert columns (except for WEIGHT2, HEIGHT3, DRNK3GE5, PHYSHLTH, MENTHLTH, AGE) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-c(4, 5, 7, 8, 12, 22)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH) and 12 (DRNK3GE5)
+col_names <- col_names[-c(4, 5, 7, 8, 12, 22)] # Columns 4 (WEIGHT2), 5 (HEIGHT3), 7 (PHYSHLTH), 8 (MENTHLTH), 12 (DRNK3GE5) and 22 (_AGE80)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 

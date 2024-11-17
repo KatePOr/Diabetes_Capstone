@@ -6,31 +6,38 @@ output: pdf_document
 ---
 # General Preprocessing Steps for Feature Engineering
 
-# Libraries
+## Libraries
 ```{r}
 library(dplyr)
 library(caret) # used to split dataset
 library(readr)
+library(gtsummary)
 ```
 
-# Read in dataset - KO
+## Read in dataset - KO
 ```{r}
 CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 ```
 
-# Remove unused columns - KO
+## Remove unused columns - KO
 ```{r}
-CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
+CDC_2023_subset <-  subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ```
 
-# Convert columns (except for PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
+## Convert columns (except for PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
-# Function to normalize BMI column - KO
+### Get columns summaries for data - KO
+```{r}
+CDC_2023_subset %>%
+  tbl_summary()
+```
+
+## Function to normalize BMI column - KO
 ```{r}
 # Function to normalize specific columns based on dataset and columns specified
 normalize <- function(dataset, columns) {
@@ -41,7 +48,7 @@ normalize <- function(dataset, columns) {
 }
 ```
 
-# Calculate test and training split - KO (function sourced from Katherine S. Geist)
+## Calculate test and training split - KO (function sourced from Katherine S. Geist)
 ```{r}
 ## Written by Katherine S. Geist, PhD
 ## Merrimack College, Massachusetts
@@ -75,7 +82,7 @@ calcSplitRatio(p=NA, CDC_2023_subset)
 ```
 Dataset will be split into 77% training and 23% testing.
 
-# Split dataset into training and test sets - KO
+## Split dataset into training and test sets - KO
 ```{r}
 training <- createDataPartition(CDC_2023_subset$DIABETE4,
                                          p = 0.77,
@@ -86,28 +93,27 @@ CDC_2023_training <- CDC_2023_subset[training, ]
 CDC_2023_test <- CDC_2023_subset[-training, ]
 ```
 
-# Normalize Numeric Columns in training and test sets - KO
+## Normalize Numeric Columns in training and test sets - KO
 ```{r}
 columns = c(5:6, 10, 19, 20)
 normalize(CDC_2023_training, columns)
 normalize(CDC_2023_test, columns)
 ```
 
-# Check proportions of DIABETE4 in training and test sets - KO
+## Check proportions of DIABETE4 in training and test sets - KO
 ```{r}
 prop.table(table(CDC_2023_training$DIABETE4))
 prop.table(table(CDC_2023_test$DIABETE4))
 ```
 
-### Lasso Regression - SG
+# Lasso Regression - SG
 
-# Install and load the glmnet package
+## Install and load the glmnet package
 ```{r}
-install.packages("glmnet")
 library(glmnet)
 ```
 
-# Prepare training and test datasets - SG
+## Prepare training and test datasets - SG
 ```{r}
 CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
 
@@ -117,13 +123,10 @@ single_level_factors_test <- sapply(CDC_2023_test, function(x) is.factor(x) && l
 CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
 
 CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]
-
-
 ```
 
-# Remove the response variable (DIABETE4) from predictors - SG
+## Remove the response variable (DIABETE4) from predictors - SG
 ```{r}
-
 X_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training)[,-1]  # Exclude intercept
 y_train <- CDC_2023_training$DIABETE4
 
@@ -132,13 +135,14 @@ y_test <- CDC_2023_test$DIABETE4
 ```
 
 
-# Perform Lasso regression with cross-validation - SG
+## Perform Lasso regression with cross-validation - SG
 ```{r}
 lasso_model <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
 
 # Find the best lambda value
 best_lambda <- lasso_model$lambda.min
 cat("Best lambda: ", best_lambda, "\n")
+plot(lasso_model)
 
 # Fit the Lasso model with the best lambda
 final_lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = best_lambda, family = "binomial")
@@ -157,5 +161,363 @@ print(conf_matrix)
 # Calculate accuracy
 accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
 cat("Accuracy: ", accuracy, "\n")
+
+# Print lasso coefficients
+coef(final_lasso_model)
 ```
 
+# Preprocessing and Feature Engineering for Social Factors Model
+
+# Calculate test and training split for Social Factors Subset - KO (function sourced from Katherine S. Geist)
+```{r}
+# Subset data to only include Social Factors
+CDC_2023_Social_Factors = subset(CDC_2023_subset, 
+                         select = c(PHYSHLTH, MENTHLTH, PERSDOC3, MEDCOST1, 
+                                    SMOKE100, DRNK3GE5, EXERANY2, DIABETE4)
+                         )
+
+## Written by Katherine S. Geist, PhD
+## Merrimack College, Massachusetts
+## Please do not distribute without attribution
+## https://github.com/ksgeist
+
+calcSplitRatio <- function(p = NA, df) {
+  ## @p  = the number of parameters. by default, if none are provided, the number of columns (predictors) in the dataset are used
+  ## @df = the dataframe that will be used for the analysis
+  
+  ## If the number of parameters isn't supplied, set it to the number of features minus 1 for the target
+  if(is.na(p)) {
+    p <- ncol(df) -1   ## COMMENT HERE
+  }
+  
+  ## Calculate the ideal number of testing set
+  test_N <- (1/sqrt(p))*nrow(df)
+  ## Turn that into a testing proportion
+  test_prop <- round((1/sqrt(p))*nrow(df)/nrow(df), 2)
+  ## And find the training proportion
+  train_prop <- 1-test_prop
+  
+  ## Tell us the results!
+  print(paste0("The ideal split ratio is ", train_prop, ":", test_prop, " training:testing"))
+  
+  ## Return the size of the training set
+  return(train_prop)
+}
+
+calcSplitRatio(p=NA, CDC_2023_Social_Factors)
+```
+
+## Split dataset into training and test sets - KO
+```{r}
+training <- createDataPartition(CDC_2023_Social_Factors$DIABETE4,
+                                         p = 0.62,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_Social_Factors[training, ]
+CDC_2023_test <- CDC_2023_Social_Factors[-training, ]
+```
+
+## Normalize Numeric Columns in training and test sets - KO
+```{r}
+columns = c(1:2, 6)
+normalize(CDC_2023_training, columns)
+normalize(CDC_2023_test, columns)
+```
+
+## Check proportions of DIABETE4 in training and test sets - KO
+```{r}
+prop.table(table(CDC_2023_training$DIABETE4))
+prop.table(table(CDC_2023_test$DIABETE4))
+```
+
+# Lasso Regression - SG
+
+## Install and load the glmnet package
+```{r}
+library(glmnet)
+```
+
+## Prepare training and test datasets - SG
+```{r}
+CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+# Identify single-level factor columns in CDC_2023_test
+single_level_factors_test <- sapply(CDC_2023_test, function(x) is.factor(x) && length(levels(x)) < 2)
+
+CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]
+```
+
+## Remove the response variable (DIABETE4) from predictors - SG
+```{r}
+X_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training)[,-1]  # Exclude intercept
+y_train <- CDC_2023_training$DIABETE4
+
+X_test <- model.matrix(DIABETE4 ~ ., data = CDC_2023_test)[,-1]  # Exclude intercept
+y_test <- CDC_2023_test$DIABETE4
+```
+
+
+## Perform Lasso regression with cross-validation - SG
+```{r}
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
+
+# Find the best lambda value
+best_lambda <- lasso_model$lambda.min
+cat("Best lambda: ", best_lambda, "\n")
+plot(lasso_model)
+
+# Fit the Lasso model with the best lambda
+final_lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = best_lambda, family = "binomial")
+
+# Predict on the test set
+predictions <- predict(final_lasso_model, s = best_lambda, newx = X_test, type = "response")
+
+# Convert predictions to binary outcomes
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# Confusion matrix
+conf_matrix <- table(Predicted = predicted_classes, Actual = y_test)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Calculate accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Accuracy: ", accuracy, "\n")
+
+# Print lasso coefficients
+coef(final_lasso_model)
+```
+
+# Preprocessing and Feature Engineering for Demographics Model
+
+# Calculate test and training split for Demographics Subset - KO (function sourced from Katherine S. Geist)
+```{r}
+# Subset data to only include Demographics
+CDC_2023_Demographics = subset(CDC_2023_subset, 
+                         select = c(EDUCA, EMPLOY1, INCOME3, SEXVAR, BMI, `_AGE80`, DIABETE4)
+                         )
+
+## Written by Katherine S. Geist, PhD
+## Merrimack College, Massachusetts
+## Please do not distribute without attribution
+## https://github.com/ksgeist
+
+calcSplitRatio <- function(p = NA, df) {
+  ## @p  = the number of parameters. by default, if none are provided, the number of columns (predictors) in the dataset are used
+  ## @df = the dataframe that will be used for the analysis
+  
+  ## If the number of parameters isn't supplied, set it to the number of features minus 1 for the target
+  if(is.na(p)) {
+    p <- ncol(df) -1   ## COMMENT HERE
+  }
+  
+  ## Calculate the ideal number of testing set
+  test_N <- (1/sqrt(p))*nrow(df)
+  ## Turn that into a testing proportion
+  test_prop <- round((1/sqrt(p))*nrow(df)/nrow(df), 2)
+  ## And find the training proportion
+  train_prop <- 1-test_prop
+  
+  ## Tell us the results!
+  print(paste0("The ideal split ratio is ", train_prop, ":", test_prop, " training:testing"))
+  
+  ## Return the size of the training set
+  return(train_prop)
+}
+
+calcSplitRatio(p=NA, CDC_2023_Demographics)
+```
+
+## Split dataset into training and test sets - KO
+```{r}
+training <- createDataPartition(CDC_2023_Demographics$DIABETE4,
+                                         p = 0.59,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_Demographics[training, ]
+CDC_2023_test <- CDC_2023_Demographics[-training, ]
+```
+
+## Normalize Numeric Columns in training and test sets - KO
+```{r}
+columns = c(5:6)
+normalize(CDC_2023_training, columns)
+normalize(CDC_2023_test, columns)
+```
+
+## Check proportions of DIABETE4 in training and test sets - KO
+```{r}
+prop.table(table(CDC_2023_training$DIABETE4))
+prop.table(table(CDC_2023_test$DIABETE4))
+```
+
+# Lasso Regression - SG
+
+## Prepare training and test datasets - SG
+```{r}
+CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+# Identify single-level factor columns in CDC_2023_test
+single_level_factors_test <- sapply(CDC_2023_test, function(x) is.factor(x) && length(levels(x)) < 2)
+
+CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]
+```
+
+## Remove the response variable (DIABETE4) from predictors - SG
+```{r}
+X_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training)[,-1]  # Exclude intercept
+y_train <- CDC_2023_training$DIABETE4
+
+X_test <- model.matrix(DIABETE4 ~ ., data = CDC_2023_test)[,-1]  # Exclude intercept
+y_test <- CDC_2023_test$DIABETE4
+```
+
+
+## Perform Lasso regression with cross-validation - SG
+```{r}
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
+
+# Find the best lambda value
+best_lambda <- lasso_model$lambda.min
+cat("Best lambda: ", best_lambda, "\n")
+plot(lasso_model)
+
+# Fit the Lasso model with the best lambda
+final_lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = best_lambda, family = "binomial")
+
+# Predict on the test set
+predictions <- predict(final_lasso_model, s = best_lambda, newx = X_test, type = "response")
+
+# Convert predictions to binary outcomes
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# Confusion matrix
+conf_matrix <- table(Predicted = predicted_classes, Actual = y_test)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Calculate accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Accuracy: ", accuracy, "\n")
+
+# Print lasso coefficients
+coef(final_lasso_model)
+```
+
+# Preprocessing and Feature Engineering for Diseases Model
+
+# Calculate test and training split for Disease Subset - KO (function sourced from Katherine S. Geist)
+```{r}
+# Subset data to only include Diseases
+CDC_2023_Disease = subset(CDC_2023_subset, 
+                         select = c(BPHIGH6, TOLDHI3, CVDINFR4, CVDCRHD4, CVDSTRK3, CHCKDNY2, DIABETE4)
+                         )
+
+## Written by Katherine S. Geist, PhD
+## Merrimack College, Massachusetts
+## Please do not distribute without attribution
+## https://github.com/ksgeist
+
+calcSplitRatio <- function(p = NA, df) {
+  ## @p  = the number of parameters. by default, if none are provided, the number of columns (predictors) in the dataset are used
+  ## @df = the dataframe that will be used for the analysis
+  
+  ## If the number of parameters isn't supplied, set it to the number of features minus 1 for the target
+  if(is.na(p)) {
+    p <- ncol(df) -1   ## COMMENT HERE
+  }
+  
+  ## Calculate the ideal number of testing set
+  test_N <- (1/sqrt(p))*nrow(df)
+  ## Turn that into a testing proportion
+  test_prop <- round((1/sqrt(p))*nrow(df)/nrow(df), 2)
+  ## And find the training proportion
+  train_prop <- 1-test_prop
+  
+  ## Tell us the results!
+  print(paste0("The ideal split ratio is ", train_prop, ":", test_prop, " training:testing"))
+  
+  ## Return the size of the training set
+  return(train_prop)
+}
+
+calcSplitRatio(p=NA, CDC_2023_Disease)
+```
+
+## Split dataset into training and test sets - KO
+```{r}
+training <- createDataPartition(CDC_2023_Disease$DIABETE4,
+                                         p = 0.59,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_Disease[training, ]
+CDC_2023_test <- CDC_2023_Disease[-training, ]
+```
+
+## Check proportions of DIABETE4 in training and test sets - KO
+```{r}
+prop.table(table(CDC_2023_training$DIABETE4))
+prop.table(table(CDC_2023_test$DIABETE4))
+```
+
+# Lasso Regression - SG
+
+## Prepare training and test datasets - SG
+```{r}
+CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+# Identify single-level factor columns in CDC_2023_test
+single_level_factors_test <- sapply(CDC_2023_test, function(x) is.factor(x) && length(levels(x)) < 2)
+
+CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
+
+CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]
+```
+
+## Remove the response variable (DIABETE4) from predictors - SG
+```{r}
+X_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training)[,-1]  # Exclude intercept
+y_train <- CDC_2023_training$DIABETE4
+
+X_test <- model.matrix(DIABETE4 ~ ., data = CDC_2023_test)[,-1]  # Exclude intercept
+y_test <- CDC_2023_test$DIABETE4
+```
+
+
+## Perform Lasso regression with cross-validation - SG
+```{r}
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
+
+# Find the best lambda value
+best_lambda <- lasso_model$lambda.min
+cat("Best lambda: ", best_lambda, "\n")
+plot(lasso_model)
+
+# Fit the Lasso model with the best lambda
+final_lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = best_lambda, family = "binomial")
+
+# Predict on the test set
+predictions <- predict(final_lasso_model, s = best_lambda, newx = X_test, type = "response")
+
+# Convert predictions to binary outcomes
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# Confusion matrix
+conf_matrix <- table(Predicted = predicted_classes, Actual = y_test)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Calculate accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Accuracy: ", accuracy, "\n")
+
+# Print lasso coefficients
+coef(final_lasso_model)
+```

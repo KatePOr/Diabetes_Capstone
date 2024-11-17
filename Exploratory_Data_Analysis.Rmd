@@ -15,7 +15,7 @@ CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 
 ## Remove unused columns - KO & SG
 ```{r}
-CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 24) )
+CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ```
 
 ## Libraries for data visualizations and tables
@@ -28,16 +28,14 @@ library(treemap)
 library(plotly)
 library(gtsummary)
 library(stringr)
+library(readr)
 ```
 
 ### Convert columns (except for AGE & BMI) to factors - KO & SG
 ```{r}
-# Exclude columns 20 and 21 (assuming these are AGE and BMI)
-col_names <- col_names[-c(20, 21)]
-
-# Convert all other columns to factors
-CDC_2023_subset[, col_names] <- lapply(CDC_2023_subset[, col_names], factor)
-
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
 ## Get columns proportions for factor data after data cleaning - KO
@@ -134,18 +132,11 @@ CDC_2023_subset %>%
 table <- table(CDC_2023_subset$PHYSHLTH, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
 
-# Bar graph overall
-ggplot(CDC_2023_subset, aes(x=PHYSHLTH, fill=PHYSHLTH)) + 
-  geom_bar() + 
-  scale_y_continuous(labels = scales::comma)
-
-# Bar graph by diabetes
+# Bar graph
 CDC_2023_subset %>% 
-  group_by(DIABETE4) %>%
-  ggplot(aes(x=PHYSHLTH, fill=DIABETE4)) + 
+  ggplot(aes(x=PHYSHLTH)) + 
     geom_bar() + 
-    scale_y_continuous(labels = scales::comma) +
-    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
+    scale_y_continuous(labels = scales::comma) 
 ```
 
 ### MENTHLTH summary (0: 0 days of bad health, 1: 1-13 days of bad health, 2: 14+ days of bad health) - KO
@@ -154,18 +145,11 @@ CDC_2023_subset %>%
 table <- table(CDC_2023_subset$MENTHLTH, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
 
-# Bar graph overall
-ggplot(CDC_2023_subset, aes(x=MENTHLTH, fill=MENTHLTH)) + 
-  geom_bar() + 
-  scale_y_continuous(labels = scales::comma)
-
-# Bar graph by diabetes
+# Bar graph
 CDC_2023_subset %>% 
-  group_by(DIABETE4) %>%
-  ggplot(aes(x=MENTHLTH, fill=DIABETE4)) + 
+  ggplot(aes(x=MENTHLTH)) + 
     geom_bar() + 
-    scale_y_continuous(labels = scales::comma) +
-    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
+    scale_y_continuous(labels = scales::comma) 
 ```
 
 ### PERSDOC3 summary (1: 1 or more personal doctors, 2: none)- KO
@@ -228,24 +212,17 @@ CDC_2023_subset %>%
     geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
 ```
 
-### DRNK3GE5 summary (0: No binge drinking in last 30 days, 1: yes, binge drinking in last 30 days) - KO
+### DRNK3GE5 summary (0: No binge drinking in last 30 days, 1-30: Number of times binge drinking in last 30 days) - KO
 ```{r}
 # Proportion summary
 table <- table(CDC_2023_subset$DRNK3GE5, useNA = "ifany")
 prop.table(table) %>% {. * 100} %>% round(4)
 
-# Bar graph overall
-ggplot(CDC_2023_subset, aes(x=DRNK3GE5, fill=DRNK3GE5)) + 
-  geom_bar() + 
-  scale_y_continuous(labels = scales::comma)
-
-# Bar graph by diabetes
+# Bar graph
 CDC_2023_subset %>% 
-  group_by(DIABETE4) %>%
-  ggplot(aes(x=DRNK3GE5, fill=DIABETE4)) + 
+  ggplot(aes(x=DRNK3GE5)) + 
     geom_bar() + 
-    scale_y_continuous(labels = scales::comma) +
-    geom_text(stat='count', aes(label=..count..), vjust = 0.25, size=3)
+    scale_y_continuous(labels = scales::comma) 
 ```
 
 ### EXERANY2 summary (1: yes,physical activity in last 30 days, 2: no physical activity in last 30 days) - KO
@@ -400,6 +377,19 @@ ggplot(CDC_2023_subset, aes(x=DIABETE4, fill=DIABETE4)) +
   scale_y_continuous(labels = scales::comma)
 ```
 
+### _AGE80 summary (Age between 18 and 80 years old) - KO
+```{r}
+# Proportion summary
+table <- table(CDC_2023_subset$`_AGE80`, useNA = "ifany")
+prop.table(table) %>% {. * 100} %>% round(4)
+
+# Bar graph
+CDC_2023_subset %>% 
+  ggplot(aes(x=`_AGE80`)) + 
+    geom_bar() + 
+    scale_y_continuous(labels = scales::comma) 
+```
+
 ## Compare Diabetes and Exercise to Determine the Impact on Type 2 Diabetes - SG
 ```{r}
 # Convert DIABETE4 and EXERANY2 to correct types
@@ -434,70 +424,6 @@ ggplot(exercise_bmi_diabetes_data, aes(x = Exercise, y = Diabetes_Prevalence, fi
        x = "Regular Exercise",
       
 )
-```
-
-# Calculate proportions for education levels by diabetes status & plot (precleaned data) - SG
-```{r}
-# Calculate proportion
-education_diabetes_proportion <- CDC_2023 %>%
-  group_by(EDUCA, DIABETE4) %>%  # Group by education level and diabetes status
-  summarise(count = n(), .groups = 'drop') %>%  # Count occurrences
-  group_by(EDUCA) %>%  # Group by education level
-  mutate(proportion = count / sum(count))  # Calculate proportions
-
-# Print table to view proportions
-print(education_diabetes_proportion)
-
-# Create bar plot to display proportions
-ggplot(education_diabetes_proportion, aes(x = EDUCA, y = proportion, fill = as.factor(DIABETE4))) +
-  geom_bar(stat = "identity", position = "fill") +  # Stacked bar chart normalized to show proportions
-  labs(
-    title = "Education Level Distribution by Type 2 Diabetes Status",
-    x = "Education Level",
-    y = "Proportion",
-    fill = "Diabetes Status\n(0: No, 1: Yes)"
-  ) +
-  scale_y_continuous(labels = scales::percent_format()) +  # Show proportions as percentages
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for readability
-    plot.title = element_text(size = 14, face = "bold")  # Style title
-  )
-```
-
-# Proportion table and bar graph comparing Kidney Disease and Type 2 Diabetes - SG
-```{r}
-# Create a proportion table for Kidney Disease (CHCKDNY2) and Type 2 Diabetes (DIABETE4)
-proportion_table <- CDC_2023_subset %>%
-  group_by(CHCKDNY2, DIABETE4) %>%
-  summarise(Count = n()) %>%
-  mutate(Proportion = Count / sum(Count))
-
-# Rename levels of Kidney Disease and Diabetes for better readability
-proportion_table$CHCKDNY2 <- factor(proportion_table$CHCKDNY2, 
-                                    levels = c(1, 2),
-                                    labels = c("Yes", "No"))
-
-proportion_table$DIABETE4 <- factor(proportion_table$DIABETE4, 
-                                    levels = c(1, 0),
-                                    labels = c("Type 2 Diabetes", "No Diabetes"))
-
-# Create a bar graph to visualize the correlation
-ggplot(proportion_table, aes(x = CHCKDNY2, y = Proportion, fill = DIABETE4)) +
-  geom_bar(stat = "identity", position = "fill") +
-  labs(
-    title = "Proportion of Kidney Disease by Type 2 Diabetes Status",
-    x = "Kidney Disease",
-    y = "Proportion",
-    fill = "Diabetes Status"
-  ) +
-  scale_y_continuous(labels = scales::percent) +
-  theme_minimal() +
-  theme(
-    text = element_text(size = 14),
-    legend.position = "top"
-  )
-
 ```
 
 ### Convert DIABETE4 back to factor - KO
@@ -553,7 +479,7 @@ ggplot(data=BMI_diab, aes(x = BMI)) +
 
 ### Change column names for simpler axes and legends - KO
 ```{r}
-colnames(CDC_2023_subset) <- c("Education", "Employment_Status", "Income", "Sex", "Physical_Health", "Mental_Health", "Personal_Doctor", "Not_Afford_Doctor", "Smoked_100_Pkgs", "Binge_Drinking", "Exercised", "HighBP", "High_Cholesterol", "Myocardial_Infarction", "Heart_Disease", "Stroke", "Kidney_Disease", "Type_2_Diabetes", "BMI", "BMI_Category")
+colnames(CDC_2023_subset) <- c("Education", "Employment_Status", "Income", "Sex", "Physical_Health", "Mental_Health", "Personal_Doctor", "Not_Afford_Doctor", "Smoked_100_Pkgs", "Binge_Drinking", "Exercised", "HighBP", "High_Cholesterol", "Myocardial_Infarction", "Heart_Disease", "Stroke", "Kidney_Disease", "Type_2_Diabetes", "Age", "BMI", "BMI_Category")
 ```
 
 ### Proportion tables for each of the categories (Social Factors, Demographics, and Diseases) split by type 2 diabetes - KO
@@ -561,20 +487,12 @@ colnames(CDC_2023_subset) <- c("Education", "Employment_Status", "Income", "Sex"
 # Social factors
 CDC_2023_subset %>%
   # Rename variables to simplify axes and legends
-  mutate(Physical_Health = str_replace(Physical_Health, "0", "0 Days")) %>%
-  mutate(Physical_Health = str_replace(Physical_Health, "1", "1 -13 Days")) %>%
-  mutate(Physical_Health = str_replace(Physical_Health, "2", "14+ Days")) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "0", "0 Days")) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "1", "1 -13 Days")) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "2", "14+ Days")) %>%
   mutate(Personal_Doctor = str_replace(Personal_Doctor, "1", "More than one")) %>%
   mutate(Personal_Doctor = str_replace(Personal_Doctor, "2", "No")) %>%
   mutate(Not_Afford_Doctor = str_replace(Not_Afford_Doctor, "1", "Yes")) %>%
   mutate(Not_Afford_Doctor = str_replace(Not_Afford_Doctor, "2", "No")) %>%
   mutate(Smoked_100_Pkgs = str_replace(Smoked_100_Pkgs, "1", "Yes")) %>%
   mutate(Smoked_100_Pkgs = str_replace(Smoked_100_Pkgs, "2", "No")) %>%
-  mutate(Binge_Drinking = str_replace(Binge_Drinking, "1", "Yes")) %>%
-  mutate(Binge_Drinking = str_replace(Binge_Drinking, "0", "No")) %>%
   mutate(Exercised = str_replace(Exercised, "1", "Yes")) %>%
   mutate(Exercised = str_replace(Exercised, "2", "No")) %>%
   mutate(Type_2_Diabetes = str_replace(Type_2_Diabetes, "0", "No Diabetes")) %>%
@@ -669,19 +587,6 @@ CDC_2023_subset %>%
 ### Quasi random plot shown to illustrate Income vs BMI in a violin plot format - KO
 ```{r}
 CDC_2023_subset %>%
-  # Rename variables to simplify axes and legends
-  mutate(Income = str_replace(Income, "1", "Less than $10,000")) %>%
-  mutate(Income = str_replace(Income, "2", "$10,000 to <$15,000")) %>%
-  mutate(Income = str_replace(Income, "3", "$15,000 to <$20,000")) %>%
-  mutate(Income = str_replace(Income, "4", "$20,000 to <$25,000")) %>%
-  mutate(Income = str_replace(Income, "5", "$25,000 to <$35,000")) %>%
-  mutate(Income = str_replace(Income, "6", "$35,000 to <$50,000")) %>%
-  mutate(Income = str_replace(Income, "7", "$50,000 to <$75,000")) %>%
-  mutate(Income = str_replace(Income, "8", "$75,000 to < $100,000")) %>%
-  mutate(Income = str_replace(Income, "9", "$100,000 to <$150,000")) %>%
-  mutate(Income = str_replace(Income, "10", "$150,000 to <$200,000")) %>%
-  mutate(Income = str_replace(Income, "11", "$200,000 or more")) %>%
-  mutate(Income = as.factor(Income)) %>%
   ggplot(aes(y = BMI, x = Income)) +
     geom_quasirandom(aes(y = BMI, x = Income)) +
     ylab("BMI") +
@@ -1102,10 +1007,10 @@ model.matrix(~0+., data=subset) %>%
 ## Plots to compare relationship between Demographic Variables
 ### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 
-### Comapre Employment_Status, Education, and Sex - KO
+### Comapre Employment_Status, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
-  group_by(Education, Employment_Status, Sex) %>%
+  group_by(Education, Employment_Status, Type_2_Diabetes) %>%
   # Rename variables to simplify axes and legends
   mutate(Education = str_replace(Education, "1", "Never attended school or only attended kindergarten")) %>%
   mutate(Education = str_replace(Education, "2", "Grades 1 through 8 (Elementary)")) %>%
@@ -1117,17 +1022,6 @@ df_summary <- CDC_2023_subset %>%
   mutate(Employment_Status = str_replace(Employment_Status, "1", "Employed")) %>%
   mutate(Employment_Status = str_replace(Employment_Status, "2", "Out of Labor Force")) %>%
   mutate(Employment_Status = str_replace(Employment_Status, "3", "Unemployed")) %>%
-  mutate(Income = str_replace(Income, "1", "Less than $10,000")) %>%
-  mutate(Income = str_replace(Income, "2", "$10,000 to <$15,000")) %>%
-  mutate(Income = str_replace(Income, "3", "$15,000 to <$20,000")) %>%
-  mutate(Income = str_replace(Income, "4", "$20,000 to <$25,000")) %>%
-  mutate(Income = str_replace(Income, "5", "$25,000 to <$35,000")) %>%
-  mutate(Income = str_replace(Income, "6", "$35,000 to <$50,000")) %>%
-  mutate(Income = str_replace(Income, "7", "$50,000 to <$75,000")) %>%
-  mutate(Income = str_replace(Income, "8", "$75,000 to < $100,000")) %>%
-  mutate(Income = str_replace(Income, "9", "$100,000 to <$150,000")) %>%
-  mutate(Income = str_replace(Income, "10", "$150,000 to <$200,000")) %>%
-  mutate(Income = str_replace(Income, "11", "$200,000 or more")) %>%
   mutate(Sex = str_replace(Sex, "1", "Male")) %>%
   mutate(Sex = str_replace(Sex, "2", "Female")) %>%
   mutate(Type_2_Diabetes = str_replace(Type_2_Diabetes, "0", "No Diabetes")) %>%
@@ -1136,16 +1030,16 @@ df_summary <- CDC_2023_subset %>%
 # Create plot comparing Education, Sex, and Employment Status
 ggplot(df_summary, aes(x = Education, y = Employment_Status, size=Count, color=Count)) +             
   geom_point() +
-  facet_wrap(~Sex) +
+  facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
   ylab("Employment Status") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Comapre Income, Education, and Sex - KO
+### Compare Income, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
-  group_by(Education, Income, Sex) %>%
+  group_by(Education, Income, Type_2_Diabetes) %>%
   mutate(Count = n()) %>%
   # Rename variables to simplify axes and legends
   mutate(Education = str_replace(Education, "1", "Never attended school or only attended kindergarten")) %>%
@@ -1161,7 +1055,7 @@ df_summary <- CDC_2023_subset %>%
 # Create plot comparing Education, Sex, and Income
 ggplot(df_summary, aes(x = Education, y = Income, size=Count, color=Count)) +             
   geom_point() +
-  facet_wrap(~Sex) +
+  facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
@@ -1169,10 +1063,10 @@ ggplot(df_summary, aes(x = Education, y = Income, size=Count, color=Count)) +
 ## Plots to compare relationship between Demographic and Social Factors Variables - KO
 ### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 
-### Comapre Mental_Health, Education, and Sex - KO
+### Comapre Mental_Health, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
-  group_by(Education, Mental_Health, Sex) %>%
+  group_by(Education, Mental_Health, Type_2_Diabetes) %>%
   # Rename variables to simplify axes and legends
   mutate(Education = str_replace(Education, "1", "Never attended school or only attended kindergarten")) %>%
   mutate(Education = str_replace(Education, "2", "Grades 1 through 8 (Elementary)")) %>%
@@ -1181,26 +1075,22 @@ df_summary <- CDC_2023_subset %>%
   mutate(Education = str_replace(Education, "5", "College 1 to 3 years (Some college or technical school)")) %>%
   mutate(Education = str_replace(Education, "6", "College 4 years or more (College graduate)")) %>%
   mutate(Education = factor(Education, levels=c("Never attended school or only attended kindergarten", "Grades 1 through 8 (Elementary)", "Grades 9 through 11 (Some high school)", "Grade 12 or GED (High school graduate)", "College 1 to 3 years (Some college or technical school)", "College 4 years or more (College graduate)"))) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "0", "0 days")) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "1", "0-13 days")) %>%
-  mutate(Mental_Health = str_replace(Mental_Health, "2", "14+ days")) %>%
-  mutate(Mental_Health = factor(Mental_Health, levels=c("0 days", "0-13 days", "14+ days"))) %>%
   mutate(Sex = str_replace(Sex, "1", "Male")) %>%
   mutate(Sex = str_replace(Sex, "2", "Female")) %>%
   mutate(Count = n())
 # Create plot comparing Education, Sex, and Mental_Health
 ggplot(df_summary, aes(x = Education, y = Mental_Health, size=Count, color=Count)) +             
   geom_point() +
-  facet_wrap(~Sex) +
+  facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
   ylab("Days with Poor Mental Health") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Comapre Not_Afford_Doctor, Education, and Sex - KO
+### Comapre Not_Afford_Doctor, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
-  group_by(Education, Not_Afford_Doctor, Sex) %>%
+  group_by(Education, Not_Afford_Doctor, Type_2_Diabetes) %>%
   # Rename variables to simplify axes and legends
   mutate(Education = str_replace(Education, "1", "Never attended school or only attended kindergarten")) %>%
   mutate(Education = str_replace(Education, "2", "Grades 1 through 8 (Elementary)")) %>%
@@ -1219,16 +1109,16 @@ df_summary <- CDC_2023_subset %>%
 # Create plot comparing Education, Sex, and Not_Afford_Doctor
 ggplot(df_summary, aes(x = Education, y = Not_Afford_Doctor, size=Count, color=Count)) +             
   geom_point() +
-  facet_wrap(~Sex) +
+  facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
   ylab("Days with Poor Mental Health") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Compare Physical_Health, Education, and Sex - KO
+### Compare Physical_Health, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
-  group_by(Education, Physical_Health, Sex) %>%
+  group_by(Education, Physical_Health, Type_2_Diabetes) %>%
   # Rename variables to simplify axes and legends
   mutate(Education = str_replace(Education, "1", "Never attended school or only attended kindergarten")) %>%
   mutate(Education = str_replace(Education, "2", "Grades 1 through 8 (Elementary)")) %>%
@@ -1237,10 +1127,6 @@ df_summary <- CDC_2023_subset %>%
   mutate(Education = str_replace(Education, "5", "College 1 to 3 years (Some college or technical school)")) %>%
   mutate(Education = str_replace(Education, "6", "College 4 years or more (College graduate)")) %>%
   mutate(Education = factor(Education, levels=c("Never attended school or only attended kindergarten", "Grades 1 through 8 (Elementary)", "Grades 9 through 11 (Some high school)", "Grade 12 or GED (High school graduate)", "College 1 to 3 years (Some college or technical school)", "College 4 years or more (College graduate)"))) %>%
-  mutate(Physical_Health = str_replace(Physical_Health, "0", "0 days")) %>%
-  mutate(Physical_Health = str_replace(Physical_Health, "1", "0-13 days")) %>%
-  mutate(Physical_Health = str_replace(Physical_Health, "2", "14+ days")) %>%
-  mutate(Physical_Health = factor(Physical_Health, levels=c("0 days", "0-13 days", "14+ days"))) %>%
   mutate(Sex = str_replace(Sex, "1", "Male")) %>%
   mutate(Sex = str_replace(Sex, "2", "Female")) %>%
   mutate(Type_2_Diabetes = str_replace(Type_2_Diabetes, "0", "No Diabetes")) %>%
@@ -1249,7 +1135,7 @@ df_summary <- CDC_2023_subset %>%
 # Create plot comparing Education, Sex, and Physical_Health
 ggplot(df_summary, aes(x = Education, y = Physical_Health, size=Count, color=Count)) +             
   geom_point() +
-  facet_wrap(~Sex) +
+  facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
   ylab("Days with Poor Physical Health") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -1271,17 +1157,6 @@ df_summary <- CDC_2023_subset %>%
   mutate(Employment_Status = str_replace(Employment_Status, "1", "Employed")) %>%
   mutate(Employment_Status = str_replace(Employment_Status, "2", "Out of Labor Force")) %>%
   mutate(Employment_Status = str_replace(Employment_Status, "3", "Unemployed")) %>%
-  mutate(Income = str_replace(Income, "1", "Less than $10,000")) %>%
-  mutate(Income = str_replace(Income, "2", "$10,000 to <$15,000")) %>%
-  mutate(Income = str_replace(Income, "3", "$15,000 to <$20,000")) %>%
-  mutate(Income = str_replace(Income, "4", "$20,000 to <$25,000")) %>%
-  mutate(Income = str_replace(Income, "5", "$25,000 to <$35,000")) %>%
-  mutate(Income = str_replace(Income, "6", "$35,000 to <$50,000")) %>%
-  mutate(Income = str_replace(Income, "7", "$50,000 to <$75,000")) %>%
-  mutate(Income = str_replace(Income, "8", "$75,000 to < $100,000")) %>%
-  mutate(Income = str_replace(Income, "9", "$100,000 to <$150,000")) %>%
-  mutate(Income = str_replace(Income, "10", "$150,000 to <$200,000")) %>%
-  mutate(Income = str_replace(Income, "11", "$200,000 or more")) %>%
   mutate(Sex = str_replace(Sex, "1", "Male")) %>%
   mutate(Sex = str_replace(Sex, "2", "Female")) %>%
   mutate(Type_2_Diabetes = str_replace(Type_2_Diabetes, "0", "No Diabetes")) %>%

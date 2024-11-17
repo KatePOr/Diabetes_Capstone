@@ -436,6 +436,70 @@ ggplot(exercise_bmi_diabetes_data, aes(x = Exercise, y = Diabetes_Prevalence, fi
 )
 ```
 
+# Calculate proportions for education levels by diabetes status & plot (precleaned data) - SG
+```{r}
+# Calculate proportion
+education_diabetes_proportion <- CDC_2023 %>%
+  group_by(EDUCA, DIABETE4) %>%  # Group by education level and diabetes status
+  summarise(count = n(), .groups = 'drop') %>%  # Count occurrences
+  group_by(EDUCA) %>%  # Group by education level
+  mutate(proportion = count / sum(count))  # Calculate proportions
+
+# Print table to view proportions
+print(education_diabetes_proportion)
+
+# Create bar plot to display proportions
+ggplot(education_diabetes_proportion, aes(x = EDUCA, y = proportion, fill = as.factor(DIABETE4))) +
+  geom_bar(stat = "identity", position = "fill") +  # Stacked bar chart normalized to show proportions
+  labs(
+    title = "Education Level Distribution by Type 2 Diabetes Status",
+    x = "Education Level",
+    y = "Proportion",
+    fill = "Diabetes Status\n(0: No, 1: Yes)"
+  ) +
+  scale_y_continuous(labels = scales::percent_format()) +  # Show proportions as percentages
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for readability
+    plot.title = element_text(size = 14, face = "bold")  # Style title
+  )
+```
+
+# Proportion table and bar graph comparing Kidney Disease and Type 2 Diabetes - SG
+```{r}
+# Create a proportion table for Kidney Disease (CHCKDNY2) and Type 2 Diabetes (DIABETE4)
+proportion_table <- CDC_2023_subset %>%
+  group_by(CHCKDNY2, DIABETE4) %>%
+  summarise(Count = n()) %>%
+  mutate(Proportion = Count / sum(Count))
+
+# Rename levels of Kidney Disease and Diabetes for better readability
+proportion_table$CHCKDNY2 <- factor(proportion_table$CHCKDNY2, 
+                                    levels = c(1, 2),
+                                    labels = c("Yes", "No"))
+
+proportion_table$DIABETE4 <- factor(proportion_table$DIABETE4, 
+                                    levels = c(1, 0),
+                                    labels = c("Type 2 Diabetes", "No Diabetes"))
+
+# Create a bar graph to visualize the correlation
+ggplot(proportion_table, aes(x = CHCKDNY2, y = Proportion, fill = DIABETE4)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(
+    title = "Proportion of Kidney Disease by Type 2 Diabetes Status",
+    x = "Kidney Disease",
+    y = "Proportion",
+    fill = "Diabetes Status"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 14),
+    legend.position = "top"
+  )
+
+```
+
 ### Convert DIABETE4 back to factor - KO
 ```{r}
 CDC_2023_subset$DIABETE4 <- as.factor(CDC_2023_subset$DIABETE4)

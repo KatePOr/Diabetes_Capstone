@@ -23,7 +23,7 @@ CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ```
 
-# Convert columns (except for BMI) to factors - KO
+# Convert columns (except for PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)

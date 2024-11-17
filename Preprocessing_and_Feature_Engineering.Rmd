@@ -20,13 +20,13 @@ CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 
 # Remove unused columns - KO
 ```{r}
-CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 23) )
+CDC_2023_subset = subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ```
 
 # Convert columns (except for BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-19] # Column 19 (BMI)
+col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
@@ -73,12 +73,12 @@ calcSplitRatio <- function(p = NA, df) {
 
 calcSplitRatio(p=NA, CDC_2023_subset)
 ```
-Dataset will be split into 76% training and 24% testing.
+Dataset will be split into 77% training and 23% testing.
 
 # Split dataset into training and test sets - KO
 ```{r}
 training <- createDataPartition(CDC_2023_subset$DIABETE4,
-                                         p = 0.76,
+                                         p = 0.77,
                                          list = FALSE,
                                          times = 1)
 
@@ -86,9 +86,9 @@ CDC_2023_training <- CDC_2023_subset[training, ]
 CDC_2023_test <- CDC_2023_subset[-training, ]
 ```
 
-# Normalize BMI in training and test sets - KO
+# Normalize Numeric Columns in training and test sets - KO
 ```{r}
-columns = 19
+columns = c(5:6, 10, 19, 20)
 normalize(CDC_2023_training, columns)
 normalize(CDC_2023_test, columns)
 ```

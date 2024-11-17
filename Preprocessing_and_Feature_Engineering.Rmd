@@ -111,6 +111,9 @@ library(glmnet)
 ```{r}
 CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
 
+# Identify single-level factor columns in CDC_2023_test
+single_level_factors_test <- sapply(CDC_2023_test, function(x) is.factor(x) && length(levels(x)) < 2)
+
 CDC_2023_test <- CDC_2023_test[, colnames(CDC_2023_training) != "DIABTYPE"]
 
 CDC_2023_test <- CDC_2023_test[, !single_level_factors_test]

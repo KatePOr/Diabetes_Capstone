@@ -143,3 +143,5 @@ CDC_2023_subset$BPHIGH6 <- as.factor(CDC_2023_subset$BPHIGH6)
 ```{r}
 write.csv(CDC_2023_subset, "CDC_2023_cleaned.csv")
 ```
+
+# File tested on two different machines and runs without error.

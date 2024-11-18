@@ -1174,3 +1174,5 @@ ggplot(df_summary, aes(x = Type_2_Diabetes, y = Kidney_Disease, size=freq, color
   ylab("Kidney Disease") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
+
+# File tested on two different machines and runs without error.

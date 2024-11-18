@@ -25,7 +25,7 @@ CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
 CDC_2023_subset <-  subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ```
 
-## Convert columns (except for PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
+## Convert columns (except for EDUCA, EMPLOY1, INCOME3, PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-c(1:3, 5:6, 10, 19, 20)] # Column 1 (EDUCA), 2 (EMPLOY1), 3 (INCOME3), 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
@@ -642,3 +642,5 @@ rownames(disease_coefficients_df) <- NULL
 # Print the table
 print(disease_coefficients_df)
 ```
+
+# File tested on two different machines and runs without error.

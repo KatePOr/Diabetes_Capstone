@@ -12,6 +12,7 @@ library(dplyr)
 library(caret) # used to split dataset
 library(readr)
 library(gtsummary)
+library(ggplot2)
 ```
 
 ## Read in dataset - KO
@@ -27,7 +28,7 @@ CDC_2023_subset <-  subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
 ## Convert columns (except for PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
 ```{r}
 col_names <- colnames(CDC_2023_subset)
-col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
+col_names <- col_names[-c(1:3, 5:6, 10, 19, 20)] # Column 1 (EDUCA), 2 (EMPLOY1), 3 (INCOME3), 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
 ```
 
@@ -41,10 +42,10 @@ CDC_2023_subset %>%
 ```{r}
 # Function to normalize specific columns based on dataset and columns specified
 normalize <- function(dataset, columns) {
-  dataset[, columns] <- scale(dataset[, columns],
-                              center = apply(dataset[, columns], 2, mean),
-                              scale = apply(dataset[, columns], 2, sd)
-                              )
+  scale(dataset[, columns],
+  center = apply(dataset[, columns], 2, mean),
+  scale = apply(dataset[, columns], 2, sd)
+  )
 }
 ```
 
@@ -95,9 +96,9 @@ CDC_2023_test <- CDC_2023_subset[-training, ]
 
 ## Normalize Numeric Columns in training and test sets - KO
 ```{r}
-columns = c(5:6, 10, 19, 20)
-normalize(CDC_2023_training, columns)
-normalize(CDC_2023_test, columns)
+columns = c(1:3, 5:6, 10, 19, 20)
+CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
+CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
 ```
 
 ## Check proportions of DIABETE4 in training and test sets - KO
@@ -113,6 +114,29 @@ prop.table(table(CDC_2023_test$DIABETE4))
 library(glmnet)
 ```
 
+## test code for q-q plot (DELETE)
+```{r}
+CDC_2023_training1 <- CDC_2023_training
+CDC_2023_training1$DIABETE4 <- as.numeric(CDC_2023_training1$DIABETE4)
+CDC_2023_training1$DIABETE4 <- log(CDC_2023_training1$DIABETE4+0.01)
+model <- lm(DIABETE4~., data = CDC_2023_training1) 
+   
+# get list of residuals  
+res <- resid(model) 
+ 
+# produce residual vs. fitted plot 
+plot(fitted(model), res) 
+ 
+# add a horizontal line at 0  
+abline(0,0) 
+
+#Produce a Q-Q Plot
+ # create Q-Q plot for residuals 
+qqnorm(res) 
+# add a straight diagonal line  
+# to the plot 
+qqline(res)
+```
 ## Prepare training and test datasets - SG
 ```{r}
 CDC_2023_training <- CDC_2023_training[, colnames(CDC_2023_training) != "DIABTYPE"]
@@ -221,8 +245,8 @@ CDC_2023_test <- CDC_2023_Social_Factors[-training, ]
 ## Normalize Numeric Columns in training and test sets - KO
 ```{r}
 columns = c(1:2, 6)
-normalize(CDC_2023_training, columns)
-normalize(CDC_2023_test, columns)
+CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
+CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
 ```
 
 ## Check proportions of DIABETE4 in training and test sets - KO
@@ -345,8 +369,8 @@ CDC_2023_test <- CDC_2023_Demographics[-training, ]
 ## Normalize Numeric Columns in training and test sets - KO
 ```{r}
 columns = c(5:6)
-normalize(CDC_2023_training, columns)
-normalize(CDC_2023_test, columns)
+CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
+CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
 ```
 
 ## Check proportions of DIABETE4 in training and test sets - KO

@@ -521,3 +521,100 @@ cat("Accuracy: ", accuracy, "\n")
 # Print lasso coefficients
 coef(final_lasso_model)
 ```
+Lasso Regression Including All Predictor Variables - SG
+```{r}
+# Extract coefficients at the best lambda
+coefficients <- coef(lasso_model, s = best_lambda)
+coefficients_df <- as.data.frame(as.matrix(coefficients))
+colnames(coefficients_df) <- "Coefficient"
+coefficients_df$Variable <- rownames(coefficients_df)
+rownames(coefficients_df) <- NULL
+
+# Print the table
+print(coefficients_df)
+
+```
+
+Lasso Regression Including Social Factors Predictor Variables - SG
+```{r}
+# Subset predictors for social factors
+social_factors <- c("PHYSHLTH", "MENTHLTH", "PERSDOC3", "MEDCOST1", 
+                    "SMOKE100", "DRNK3GE5", "EXERANY2")
+
+X_social_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training[, c(social_factors, "DIABETE4")])[,-1]
+y_social_train <- as.numeric(CDC_2023_training$DIABETE4)
+
+# Fit Lasso Regression with social factors only
+lasso_social_model <- cv.glmnet(X_social_train, y_social_train, alpha = 1, family = "binomial")
+
+# Extract best lambda
+best_lambda_social <- lasso_social_model$lambda.min
+print(best_lambda_social)
+
+# Extract coefficients at best lambda
+social_coefficients <- coef(lasso_social_model, s = best_lambda_social)
+social_coefficients_df <- as.data.frame(as.matrix(social_coefficients))
+colnames(social_coefficients_df) <- "Coefficient"
+social_coefficients_df$Variable <- rownames(social_coefficients_df)
+rownames(social_coefficients_df) <- NULL
+
+# Print the table
+print(social_coefficients_df)
+
+```
+
+Lasso Regression Including Demographic Predictor Variables - SG
+```{r}
+# Subset predictors for demographic factors
+demographic_factors <- c("EDUCA", "EMPLOY1", "INCOME3", "SEXVAR", "_AGE80", "BMI")
+
+X_demo_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training[, c(demographic_factors, "DIABETE4")])[,-1]
+y_demo_train <- as.numeric(CDC_2023_training$DIABETE4)
+
+# Fit Lasso Regression with demographic factors only
+lasso_demo_model <- cv.glmnet(X_demo_train, y_demo_train, alpha = 1, family = "binomial")
+
+# Extract best lambda
+best_lambda_demo <- lasso_demo_model$lambda.min
+print(best_lambda_demo)
+
+# Extract coefficients at best lambda
+demo_coefficients <- coef(lasso_demo_model, s = best_lambda_demo)
+demo_coefficients_df <- as.data.frame(as.matrix(demo_coefficients))
+colnames(demo_coefficients_df) <- "Coefficient"
+demo_coefficients_df$Variable <- rownames(demo_coefficients_df)
+rownames(demo_coefficients_df) <- NULL
+
+# Print the table
+print(demo_coefficients_df)
+
+```
+
+Lasso Regression Including Disease Predictor Variables - SG
+```{r}
+# Subset predictors for disease factors
+disease_factors <- c("BPHIGH6", "TOLDHI3", "CVDINFR4", "CVDCRHD4", "CVDSTRK3", "CHCKDNY2")
+
+# Create model matrix for training data (exclude intercept column)
+X_disease_train <- model.matrix(DIABETE4 ~ ., data = CDC_2023_training[, c(disease_factors, "DIABETE4")])[,-1]
+
+# Response variable
+y_disease_train <- as.numeric(CDC_2023_training$DIABETE4)
+
+# Fit Lasso Regression with disease-related factors
+lasso_disease_model <- cv.glmnet(X_disease_train, y_disease_train, alpha = 1, family = "binomial")
+
+# Extract best lambda
+best_lambda_disease <- lasso_disease_model$lambda.min
+print(best_lambda_disease)
+
+# Extract coefficients at best lambda
+disease_coefficients <- coef(lasso_disease_model, s = best_lambda_disease)
+disease_coefficients_df <- as.data.frame(as.matrix(disease_coefficients))
+colnames(disease_coefficients_df) <- "Coefficient"
+disease_coefficients_df$Variable <- rownames(disease_coefficients_df)
+rownames(disease_coefficients_df) <- NULL
+
+# Print the table
+print(disease_coefficients_df)
+```

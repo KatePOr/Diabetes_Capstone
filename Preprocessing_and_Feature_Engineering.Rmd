@@ -521,7 +521,7 @@ cat("Accuracy: ", accuracy, "\n")
 # Print lasso coefficients
 coef(final_lasso_model)
 ```
-Lasso Regression Including All Predictor Variables - SG
+## Lasso Regression Including All Predictor Variables - SG
 ```{r}
 # Extract coefficients at the best lambda
 coefficients <- coef(lasso_model, s = best_lambda)
@@ -535,7 +535,7 @@ print(coefficients_df)
 
 ```
 
-Lasso Regression Including Social Factors Predictor Variables - SG
+## Lasso Regression Including Social Factors Predictor Variables - SG
 ```{r}
 # Subset predictors for social factors
 social_factors <- c("PHYSHLTH", "MENTHLTH", "PERSDOC3", "MEDCOST1", 
@@ -563,7 +563,7 @@ print(social_coefficients_df)
 
 ```
 
-Lasso Regression Including Demographic Predictor Variables - SG
+## Lasso Regression Including Demographic Predictor Variables - SG
 ```{r}
 # Subset predictors for demographic factors
 demographic_factors <- c("EDUCA", "EMPLOY1", "INCOME3", "SEXVAR", "_AGE80", "BMI")
@@ -590,7 +590,7 @@ print(demo_coefficients_df)
 
 ```
 
-Lasso Regression Including Disease Predictor Variables - SG
+## Lasso Regression Including Disease Predictor Variables - SG
 ```{r}
 # Subset predictors for disease factors
 disease_factors <- c("BPHIGH6", "TOLDHI3", "CVDINFR4", "CVDCRHD4", "CVDSTRK3", "CHCKDNY2")

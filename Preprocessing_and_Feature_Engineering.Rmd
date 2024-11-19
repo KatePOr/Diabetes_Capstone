@@ -13,6 +13,7 @@ library(caret) # used to split dataset
 library(readr)
 library(gtsummary)
 library(ggplot2)
+library(glmnet)
 ```
 
 ## Read in dataset - KO
@@ -108,11 +109,6 @@ prop.table(table(CDC_2023_test$DIABETE4))
 ```
 
 # Lasso Regression - SG
-
-## Install and load the glmnet package
-```{r}
-library(glmnet)
-```
 
 ## test code for q-q plot (DELETE)
 ```{r}

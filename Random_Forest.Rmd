@@ -1,0 +1,202 @@
+---
+title: "Random Forest All Variables Model"
+author: "Kate O'Rourke"
+date: "2024-11-21"
+output: pdf_document
+---
+
+## Libraries
+```{r}
+library(dplyr)
+library(caret) # used to split dataset
+library(readr)
+library(ggplot2)
+library(pROC)
+library(tidymodels) 
+library(randomForest) # For tuning model
+```
+
+# Preprocessing
+
+## Read in dataset - KO
+```{r}
+CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
+```
+
+## Remove unused columns - KO
+```{r}
+CDC_2023_subset <-  subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
+```
+
+## Convert columns (except for EDUCA, EMPLOY1, INCOME3, PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
+```{r}
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-c(1:3, 5:6, 10, 19, 20)] # Column 1 (EDUCA), 2 (EMPLOY1), 3 (INCOME3), 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+## Function to normalize BMI column - KO
+```{r}
+# Function to normalize specific columns based on dataset and columns specified
+normalize <- function(dataset, columns) {
+  scale(dataset[, columns],
+  center = apply(dataset[, columns], 2, mean),
+  scale = apply(dataset[, columns], 2, sd)
+  )
+}
+```
+
+## Split dataset into training and test sets - KO
+Dataset will be split into 77% training and 23% testing.
+```{r}
+training <- createDataPartition(CDC_2023_subset$DIABETE4,
+                                         p = 0.77,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_subset[training, ]
+CDC_2023_test <- CDC_2023_subset[-training, ]
+```
+
+## Normalize Numeric Columns in training and test sets - KO
+```{r}
+columns = c(1:3, 5:6, 10, 19, 20)
+CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
+CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
+```
+
+# Random Forest Model
+
+```{r}
+# using the standard predictive analytics/machine learning approach with the tidymodels framework 
+diabetes_recipe <- 
+  recipe(
+    DIABETE4 ~ ., 
+    data = CDC_2023_training
+  ) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  prep(training = CDC_2023_training)
+
+rf_pred <- 
+  rand_forest(mode = "classification", trees = 500, mtry = 2) %>%
+  set_engine("ranger") %>%
+  set_mode("classification") %>%
+  fit(DIABETE4 ~ ., data = bake(diabetes_recipe, new_data = CDC_2023_training))
+
+test_baked <- bake(diabetes_recipe, new_data = CDC_2023_test, all_predictors())
+
+test_results <- 
+  CDC_2023_test %>%
+  dplyr::select(DIABETE4) %>%
+  bind_cols(
+    predict(rf_pred, new_data = test_baked, type = "prob") %>%
+      dplyr::select(p_1 = .pred_1)
+  )
+
+################################### plot ROC curve ###################################
+
+roc_data <- data.frame(threshold=seq(1,0,-0.01), fpr=0, tpr=0)
+for (i in roc_data$threshold) {
+  
+  over_threshold <- test_results[test_results$p_1 >= i, ]
+  
+  fpr <- sum(over_threshold$DIABETE4==0)/sum(test_results$DIABETE4==0)
+  roc_data[roc_data$threshold==i, "fpr"] <- fpr
+  
+  tpr <- sum(over_threshold$DIABETE4==1)/sum(test_results$DIABETE4==1)
+  roc_data[roc_data$threshold==i, "tpr"] <- tpr
+  
+}
+
+ggplot() +
+  geom_line(data = roc_data, aes(x = fpr, y = tpr, color = threshold), linewidth = 2) +
+  scale_color_gradientn(colors = rainbow(3)) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(data = roc_data[seq(1, 101, 10), ], aes(x = fpr, y = tpr)) +
+  geom_text(data = roc_data[seq(1, 101, 10), ],
+            aes(x = fpr, y = tpr, label = threshold, hjust = 1.2, vjust = -0.2)) +
+  theme_bw() +
+  xlab("FPR") + 
+  ylab("TPR")
+
+############################# ROC curve calculation breakdown ############################
+
+threshold <- 0.2
+
+test_results$predictions <- ifelse(test_results$p_1 >= threshold, 1, 0)
+tp <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==1, ])
+paste("True Positive:", tp)
+fp <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==1, ])
+paste("False Positive:", fp)
+tn <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==0, ])
+paste("True Negative:", tn)
+fn <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==0, ])
+paste("False Negative:", fn)
+
+test_results$type <- ""
+test_results[test_results$DIABETE4==1 & test_results$predictions==1, "type"] <- "tp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==1, "type"] <- "fp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==0, "type"] <- "tn"
+test_results[test_results$DIABETE4==1 & test_results$predictions==0, "type"] <- "fn"
+
+fpr <- fp/(fp + tn)
+tpr <- tp/(tp + fn)
+
+acc <- (tp + tn) / (tp + tn + fp + fn)
+paste("Accuracy: ", acc)
+
+###################################          AUC           ###################################
+
+roc_object <- roc( CDC_2023_test$DIABETE4, test_results$p_1)
+auc(roc_object)
+
+################################### plot calibration curve ###################################
+
+calibration_data <- data.frame(bin_midpoint=seq(0.05,0.95,0.1),
+                               observed_event_percentage=0)
+for (i in seq(0.05,0.95,0.1)) {
+  
+  in_interval <- test_results[test_results$p_1 >= (i-0.05) & test_results$p_1 <= (i+0.05), ]
+  oep <- nrow(in_interval[in_interval$DIABETE4==1, ])/nrow(in_interval)
+  calibration_data[calibration_data$bin_midpoint==i, "observed_event_percentage"] <- oep
+  
+}
+
+ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percentage)) +
+  geom_line(linewidth = 1) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(size = 2) +
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Bin Midpoint") +
+  ylab("Observed Event Percentage") + 
+  theme_bw()
+```
+
+# Tune model
+# create hyperparameter grid
+```{r}
+set.seed(223)
+CDC_2023_training <- as.data.frame(CDC_2023_training)
+tune_mtry <- tuneRF(CDC_2023_training[,-18], 
+                    CDC_2023_training[,18], 
+                    improve = 1e-5, 
+                    plot = TRUE) 
+
+#10 folds repeat 3 times
+control <- trainControl(method='repeatedcv', 
+                        number=10, 
+                        repeats=3)
+
+set.seed(123)
+
+#Number randomely variable selected is mtry
+mtry <- sqrt(ncol(CDC_2023_training) - 1)
+tunegrid <- expand.grid(.mtry=mtry)
+rf_default <- train(DIABETE4~., 
+                      data=CDC_2023_training, 
+                      method='rf', 
+                      metric='Accuracy', 
+                      tuneGrid=tunegrid, 
+                      trControl=control)
+print(rf_default)
+```

@@ -18,6 +18,8 @@ library(reshape2)
 library(car)
 library(yardstick)
 library(ranger)
+library(themis)
+library(plot3D)
 ```
 
 # Preprocessing
@@ -422,4 +424,109 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
   ylab("Observed Event Percentage") +
   ggtitle("Calibration Curve") +
   theme_bw()
+```
+
+
+# K-Fold Stratified Grid Cross-Validation
+# Random Forest Coss-Validation - SG
+
+```{r}
+# Define resampling method using 5-fold cross-validation
+set.seed(123)  # For reproducibility
+
+# Define the recipe for pre-processing
+diabetes_recipe <- 
+  recipe(DIABETE4 ~ ., data = CDC_2023_training) %>%
+  step_dummy(all_nominal_predictors()) %>%  # Handle categorical variables
+  themis::step_downsample(DIABETE4) 
+  
+
+# Prep the recipe
+diabetes_recipe_prepped <- prep(diabetes_recipe) %>%
+  juice()
+
+# Define the Random Forest model specification
+model_tune <- 
+  rand_forest(
+    mtry = tune(),
+    min_n = tune(),
+    trees = 500, 
+    ) %>%
+  set_engine("ranger", seed(123)) %>%
+  set_mode("classification")
+
+# 5-fold Stratified Cross-validation
+cv_folds <- vfold_cv(diabetes_recipe_prepped, v = 5,
+                  strata = DIABETE4)
+
+# Define the workflow
+tune_rf <- workflow() %>%
+  add_model(model_tune) %>%
+  add_formula(DIABETE4~.)
+
+# According to preliminary tuning, optimal grid values are around mtry 2 and min_n
+tuned <- tune_rf %>% 
+  tune_grid(resamples = cv_folds, 
+            grid =expand.grid(mtry=1:3, min_n=20:35),
+            metrics = metric_set(yardstick::accuracy,
+                                 yardstick::roc_auc))
+
+df <- tuned %>% collect_metrics()
+df <- df %>% arrange(-mean) %>% tibble(rank=seq_len(nrow(df)), .)
+df
+
+scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h", 
+          ticktype = "detailed", pch = 19, cex = 0.5, 
+          main="the true distribution", xlab="mtry",
+          ylab="min_n", zlab="roc_auc")
+```
+
+```{r}
+# Try next with both AUC and Accuracy
+metrics = metric_set(yardstick::accuracy, yardstick::roc_auc)
+
+ %>%
+  trainControl(method='repeatedcv', 
+               number=10, 
+               repeats=3,
+               search = 'random')
+
+# Ensure random search
+control <- trainControl(method='repeatedcv', 
+                        number=10, 
+                        repeats=3,
+                        search = 'random')
+
+#TRY 1: random
+control <- trainControl(method='repeatedcv', 
+                        number=10, 
+                        repeats=3,
+                        search = 'random')
+
+#Random generate 15 mtry values with tuneLength = 15
+set.seed(1)
+rf_random <- train(Class ~ .,
+                   data = dataset,
+                   method = 'rf',
+                   metric = 'Accuracy',
+                   tuneLength  = 15, 
+                   trControl = control)
+# TRY2: stratified 
+folds <- 5
+cvIndex <- createFolds(factor(CDC_2023_training$DIABETE4), folds, returnTrain = T)
+tc <- trainControl(index = cvIndex,
+               method = 'repeatedcv', 
+               number = folds,
+               search = 'random')
+
+rfFit <- train(DIABETE4 ~ ., data = CDC_2023_training, 
+            method = "rf", 
+            trControl = tc,
+            maximize = TRUE,
+            verbose = FALSE, ntree = 100)
+
+scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h", 
+          ticktype = "detailed", pch = 19, cex = 0.5, 
+          main="the true distribution", xlab="mtry",
+          ylab="min_n", zlab="roc_auc")
 ```

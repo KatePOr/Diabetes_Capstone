@@ -20,6 +20,7 @@ library(yardstick)
 library(ranger)
 library(themis)
 library(plot3D)
+library(ROSE)
 ```
 
 # Preprocessing
@@ -71,6 +72,15 @@ CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
 CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
 ```
 
+## Normalize Numeric Columns in training and test sets - KO
+```{r}
+CDC_2023_training <- CDC_2023_training %>%
+  rename( AGE80 = `_AGE80` )
+
+CDC_2023_test <- CDC_2023_test %>%
+  rename( AGE80 = `_AGE80` )
+```
+
 # Random Forest Model - KO
 
 ```{r}
@@ -86,11 +96,14 @@ diabetes_recipe <-
   step_dummy(all_nominal_predictors()) %>%
   prep(training = CDC_2023_training)
 
+
 rf_pred <- 
   rand_forest(mode = "classification", trees = 500, mtry = 2) %>%
-  set_engine("ranger") %>%
+  set_engine("randomForest",
+             strata = CDC_2023_training$DIABETE4,
+             sampsize = c(4000, 4000)) %>%
   set_mode("classification") %>%
-  fit(DIABETE4 ~ ., data = bake(diabetes_recipe, new_data = CDC_2023_training))
+  fit(DIABETE4 ~ ., data = bake(diabetes_recipe, new_data = CDC_2023_training)) 
 
 test_baked <- bake(diabetes_recipe, new_data = CDC_2023_test, all_predictors())
 
@@ -130,7 +143,7 @@ ggplot() +
 
 ############################# ROC curve calculation breakdown ############################
 
-threshold <- 0.2
+threshold <- 0.5
 
 test_results$predictions <- ifelse(test_results$p_1 >= threshold, 1, 0)
 tp <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==1, ])
@@ -437,8 +450,7 @@ set.seed(123)  # For reproducibility
 # Define the recipe for pre-processing
 diabetes_recipe <- 
   recipe(DIABETE4 ~ ., data = CDC_2023_training) %>%
-  step_dummy(all_nominal_predictors()) %>%  # Handle categorical variables
-  themis::step_downsample(DIABETE4) 
+  step_dummy(all_nominal_predictors())  # Handle categorical variables 
   
 
 # Prep the recipe
@@ -467,8 +479,8 @@ tune_rf <- workflow() %>%
 # According to preliminary tuning, optimal grid values are around mtry 2 and min_n
 tuned <- tune_rf %>% 
   tune_grid(resamples = cv_folds, 
-            grid =expand.grid(mtry=1:3, min_n=20:35),
-            metrics = metric_set(yardstick::accuracy,
+            grid =expand.grid(mtry=1:3, min_n=5:15),
+            metrics = metric_set(sensitivity,
                                  yardstick::roc_auc))
 
 df <- tuned %>% collect_metrics()
@@ -479,6 +491,102 @@ scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h",
           ticktype = "detailed", pch = 19, cex = 0.5, 
           main="the true distribution", xlab="mtry",
           ylab="min_n", zlab="roc_auc")
+```
+
+# Fit final model
+```{r}
+# Set seed
+set.seed(223)
+
+# using the standard predictive analytics/machine learning approach with the tidymodels framework 
+diabetes_recipe <- 
+  recipe(
+    DIABETE4 ~ ., 
+    data = CDC_2023_training
+  ) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  prep(training = CDC_2023_training)
+
+
+rf_pred <- 
+  rand_forest(mode = "classification", trees = 500, mtry = 2, min_n = ) %>%
+  set_engine("randomForest",
+             strata = DIABETE4,
+             sampSize = varying()) %>%
+  varying_args() %>%
+  set_mode("classification") %>%
+  fit(DIABETE4 ~ ., data = bake(diabetes_recipe, new_data = CDC_2023_training))
+
+test_baked <- bake(diabetes_recipe, new_data = CDC_2023_test, all_predictors())
+
+test_results <- 
+  CDC_2023_test %>%
+  dplyr::select(DIABETE4) %>%
+  bind_cols(
+    predict(rf_pred, new_data = test_baked, type = "prob") %>%
+      dplyr::select(p_1 = .pred_1)
+  )
+
+############################# ROC curve calculation breakdown ############################
+
+threshold <- 0.2
+
+test_results$predictions <- ifelse(test_results$p_1 >= threshold, 1, 0)
+tp <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==1, ])
+paste("True Positive:", tp)
+fp <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==1, ])
+paste("False Positive:", fp)
+tn <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==0, ])
+paste("True Negative:", tn)
+fn <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==0, ])
+paste("False Negative:", fn)
+
+test_results$type <- ""
+test_results[test_results$DIABETE4==1 & test_results$predictions==1, "type"] <- "tp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==1, "type"] <- "fp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==0, "type"] <- "tn"
+test_results[test_results$DIABETE4==1 & test_results$predictions==0, "type"] <- "fn"
+
+fpr <- fp/(fp + tn)
+tpr <- tp/(tp + fn)
+
+acc <- (tp + tn) / (tp + tn + fp + fn)
+paste("Accuracy: ", acc)
+
+###################################          AUC           ###################################
+
+roc_object <- roc( CDC_2023_test$DIABETE4, test_results$p_1)
+auc(roc_object)
+
+################################### plot calibration curve ###################################
+
+calibration_data <- data.frame(bin_midpoint=seq(0.05,0.95,0.1),
+                               observed_event_percentage=0)
+for (i in seq(0.05,0.95,0.1)) {
+  
+  in_interval <- test_results[test_results$p_1 >= (i-0.05) & test_results$p_1 <= (i+0.05), ]
+  oep <- nrow(in_interval[in_interval$DIABETE4==1, ])/nrow(in_interval)
+  calibration_data[calibration_data$bin_midpoint==i, "observed_event_percentage"] <- oep
+  
+}
+
+ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percentage)) +
+  geom_line(linewidth = 1) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(size = 2) +
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Bin Midpoint") +
+  ylab("Observed Event Percentage") + 
+  theme_bw()
+
+# Evaluate ROC-AUC on the test set
+roc_object <- roc(test_results$DIABETE4, test_results$p_1)
+auc_value <- auc(roc_object)
+cat("Test ROC-AUC:", auc_value, "\n")
+
+# Plot ROC curve
+roc_data <- yardstick::roc_curve(DIABETE4, p_1, test_results)  # Correct syntax
+autoplot(roc_data) + ggtitle("ROC Curve")
 ```
 
 ```{r}

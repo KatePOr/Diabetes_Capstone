@@ -158,8 +158,8 @@ set.seed(123)  # For reproducibility
 rf_spec <- 
   rand_forest( mode = "classification", 
                trees = 500, 
-               mtry = 15,
-               min_n = 10) %>%              
+               mtry = 2,
+               min_n = 20) %>%              
   set_engine("ranger", importance = "impurity")
 
 # Define the workflow
@@ -267,7 +267,7 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
   geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
   xlab("Bin Midpoint") +
   ylab("Observed Event Percentage") + 
-  theme_bw()
+  theme_bw() 
 
 # Evaluate ROC-AUC on the test set
 roc_object <- roc(test_results$DIABETE4, test_results$p_1)

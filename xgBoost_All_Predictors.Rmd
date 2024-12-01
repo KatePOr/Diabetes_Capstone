@@ -16,6 +16,11 @@ library(tidymodels)
 library(vip)
 ```
 
+# Set seed
+```{r}
+set.seed(123)
+```
+
 # Preprocessing
 
 ## Read in dataset - KO
@@ -95,6 +100,9 @@ diabetes_recipe <-
   ) %>%
   step_dummy(all_nominal_predictors()) 
 
+# Prep the recipe
+diabetes_recipe_prepped <- prep(diabetes_recipe)
+
 xgboost_model <- boost_tree(
       trees = tune(),
       tree_depth = tune(),
@@ -139,15 +147,37 @@ xgboost_results %>%
 
 best_auc <- xgboost_results %>% select_best("roc_auc")
 best_auc
+```
 
-final_xgboost_workflow <- finalize_workflow(
-  xgboost_workflow,
-  best_auc
-)
+# Best model
+```{r}
+xgboost_model_final <- boost_tree(
+      trees = 197,
+      tree_depth = 5,
+      learn_rate = 0.02341828) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
 
-last_xgboost_fit <- 
-  final_xgboost_workflow %>% 
-  last_fit(data_split)
+xgboost_workflow <- 
+  workflow() %>% 
+  add_recipe(diabetes_recipe) %>%
+  add_model(xgboost_model_final) %>%
+  add_case_weights(case_wts)
+
+last_xgboost_fit <- xgboost_workflow %>%
+  fit(data = CDC_2023_training)
+
+# Bake the test dataset
+test_baked <- bake(diabetes_recipe_prepped, new_data = CDC_2023_test)
+
+# Generate predictions on the baked test data
+test_results <- 
+  test_baked %>%
+  bind_cols(
+    predict(last_xgboost_fit, new_data = CDC_2023_test, type = "prob") %>%
+      dplyr::rename(p_1 = .pred_1)  # Rename predicted probabilities
+    ) %>%
+  dplyr::mutate(DIABETE4 = CDC_2023_test$DIABETE4)  # Add true labels for evaluation
 
 ################################### feature importance ###################################
 
@@ -156,14 +186,6 @@ last_xgboost_fit %>%
   vip(num_features = 20)
 
 ##################################### plot ROC curve #####################################
-
-test_results <-
-  CDC_2023_test %>%
-  dplyr::select(DIABETE4) %>%
-  bind_cols(
-    last_xgboost_fit %>% collect_predictions() %>%
-      dplyr::select(p_1 = .pred_1)
-  )
 
 roc_data <- data.frame(threshold=seq(1,0,-0.01), fpr=0, tpr=0)
 for (i in roc_data$threshold) {
@@ -213,6 +235,11 @@ tpr <- tp/(tp + fn)
 acc <- (tp + tn) / (tp + tn + fp + fn)
 paste("Accuracy: ", acc)
 
+###################################          AUC           ###################################
+
+roc_object <- roc( CDC_2023_test$DIABETE4, test_results$p_1)
+auc(roc_object)
+
 ################################### plot calibration curve ###################################
 
 calibration_data <- data.frame(bin_midpoint=seq(0.05,0.95,0.1),
@@ -231,3 +258,13 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
   geom_point(size = 2) +
   geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5)
 ```
+
+Old code:
+final_xgboost_workflow <- finalize_workflow(
+  xgboost_workflow,
+  best_auc
+)
+
+last_xgboost_fit <- 
+  final_xgboost_workflow %>% 
+  last_fit(data_split)

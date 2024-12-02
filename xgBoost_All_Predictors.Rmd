@@ -206,7 +206,10 @@ ggplot() +
   geom_abline(intercept = 0, slope = 1, lty = 2) +
   geom_point(data = roc_data[seq(1, 101, 10), ], aes(x = fpr, y = tpr)) +
   geom_text(data = roc_data[seq(1, 101, 10), ],
-            aes(x = fpr, y = tpr, label = threshold, hjust = 1.2, vjust = -0.2))
+            aes(x = fpr, y = tpr, label = threshold, hjust = 1.2, vjust = -0.2)) +
+  theme_bw() +
+  xlab("FPR") + 
+  ylab("TPR")
 
 
 ############################# ROC curve calculation breakdown ############################
@@ -256,7 +259,10 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
   geom_line(linewidth = 1) +
   geom_abline(intercept = 0, slope = 1, lty = 2) +
   geom_point(size = 2) +
-  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5)
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Bin Midpoint") +
+  ylab("Observed Event Percentage") + 
+  theme_bw() 
 ```
 
 Old code:

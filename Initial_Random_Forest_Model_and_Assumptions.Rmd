@@ -1,0 +1,425 @@
+---
+title: "Random Forest All Variables Model"
+author: "Kate O'Rourke"
+date: "2024-11-21"
+output: pdf_document
+---
+
+## Libraries
+```{r}
+library(dplyr)
+library(caret) # used to split dataset
+library(readr)
+library(ggplot2)
+library(pROC)
+library(tidymodels) 
+library(randomForest) # For tuning model
+library(reshape2)
+library(car)
+library(yardstick)
+library(ranger)
+```
+
+# Preprocessing
+
+## Read in dataset - KO
+```{r}
+CDC_2023_subset <- read_csv("CDC_2023_cleaned.csv")
+```
+
+## Remove unused columns - KO
+```{r}
+CDC_2023_subset <-  subset(CDC_2023_subset, select = -c(1, 5:6, 22, 24) )
+```
+
+## Convert columns (except for EDUCA, EMPLOY1, INCOME3, PHYSHLTH, MENTHLTH, DRNK3GE5, _AGE80, BMI) to factors - KO
+```{r}
+col_names <- colnames(CDC_2023_subset)
+col_names <- col_names[-c(1:3, 5:6, 10, 19, 20)] # Column 1 (EDUCA), 2 (EMPLOY1), 3 (INCOME3), 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
+CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+## Function to normalize BMI column - KO
+```{r}
+# Function to normalize specific columns based on dataset and columns specified
+normalize <- function(dataset, columns) {
+  scale(dataset[, columns],
+  center = apply(dataset[, columns], 2, mean),
+  scale = apply(dataset[, columns], 2, sd)
+  )
+}
+```
+
+## Split dataset into training and test sets - KO
+Dataset will be split into 77% training and 23% testing.
+```{r}
+training <- createDataPartition(CDC_2023_subset$DIABETE4,
+                                         p = 0.77,
+                                         list = FALSE,
+                                         times = 1)
+
+CDC_2023_training <- CDC_2023_subset[training, ]
+CDC_2023_test <- CDC_2023_subset[-training, ]
+```
+
+## Normalize Numeric Columns in training and test sets - KO
+```{r}
+columns = c(1:3, 5:6, 10, 19, 20)
+CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
+CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
+```
+
+# Random Forest Model - KO
+
+```{r}
+# Set seed
+set.seed(223)
+
+# using the standard predictive analytics/machine learning approach with the tidymodels framework 
+diabetes_recipe <- 
+  recipe(
+    DIABETE4 ~ ., 
+    data = CDC_2023_training
+  ) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  prep(training = CDC_2023_training)
+
+rf_pred <- 
+  rand_forest(mode = "classification", trees = 500, mtry = 2) %>%
+  set_engine("ranger") %>%
+  set_mode("classification") %>%
+  fit(DIABETE4 ~ ., data = bake(diabetes_recipe, new_data = CDC_2023_training))
+
+test_baked <- bake(diabetes_recipe, new_data = CDC_2023_test, all_predictors())
+
+test_results <- 
+  CDC_2023_test %>%
+  dplyr::select(DIABETE4) %>%
+  bind_cols(
+    predict(rf_pred, new_data = test_baked, type = "prob") %>%
+      dplyr::select(p_1 = .pred_1)
+  )
+
+################################### plot ROC curve ###################################
+
+roc_data <- data.frame(threshold=seq(1,0,-0.01), fpr=0, tpr=0)
+for (i in roc_data$threshold) {
+  
+  over_threshold <- test_results[test_results$p_1 >= i, ]
+  
+  fpr <- sum(over_threshold$DIABETE4==0)/sum(test_results$DIABETE4==0)
+  roc_data[roc_data$threshold==i, "fpr"] <- fpr
+  
+  tpr <- sum(over_threshold$DIABETE4==1)/sum(test_results$DIABETE4==1)
+  roc_data[roc_data$threshold==i, "tpr"] <- tpr
+  
+}
+
+ggplot() +
+  geom_line(data = roc_data, aes(x = fpr, y = tpr, color = threshold), linewidth = 2) +
+  scale_color_gradientn(colors = rainbow(3)) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(data = roc_data[seq(1, 101, 10), ], aes(x = fpr, y = tpr)) +
+  geom_text(data = roc_data[seq(1, 101, 10), ],
+            aes(x = fpr, y = tpr, label = threshold, hjust = 1.2, vjust = -0.2)) +
+  theme_bw() +
+  xlab("FPR") + 
+  ylab("TPR")
+
+############################# ROC curve calculation breakdown ############################
+
+threshold <- 0.2
+
+test_results$predictions <- ifelse(test_results$p_1 >= threshold, 1, 0)
+tp <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==1, ])
+paste("True Positive:", tp)
+fp <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==1, ])
+paste("False Positive:", fp)
+tn <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==0, ])
+paste("True Negative:", tn)
+fn <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==0, ])
+paste("False Negative:", fn)
+
+test_results$type <- ""
+test_results[test_results$DIABETE4==1 & test_results$predictions==1, "type"] <- "tp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==1, "type"] <- "fp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==0, "type"] <- "tn"
+test_results[test_results$DIABETE4==1 & test_results$predictions==0, "type"] <- "fn"
+
+fpr <- fp/(fp + tn)
+tpr <- tp/(tp + fn)
+
+acc <- (tp + tn) / (tp + tn + fp + fn)
+paste("Accuracy: ", acc)
+
+###################################          AUC           ###################################
+
+roc_object <- roc( CDC_2023_test$DIABETE4, test_results$p_1)
+auc(roc_object)
+
+################################### plot calibration curve ###################################
+
+calibration_data <- data.frame(bin_midpoint=seq(0.05,0.95,0.1),
+                               observed_event_percentage=0)
+for (i in seq(0.05,0.95,0.1)) {
+  
+  in_interval <- test_results[test_results$p_1 >= (i-0.05) & test_results$p_1 <= (i+0.05), ]
+  oep <- nrow(in_interval[in_interval$DIABETE4==1, ])/nrow(in_interval)
+  calibration_data[calibration_data$bin_midpoint==i, "observed_event_percentage"] <- oep
+  
+}
+
+ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percentage)) +
+  geom_line(linewidth = 1) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(size = 2) +
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Bin Midpoint") +
+  ylab("Observed Event Percentage") + 
+  theme_bw()
+```
+
+# Preliminary Tuning of model - KO
+# create hyperparameter grid
+```{r}
+set.seed(223)
+CDC_2023_training <- as.data.frame(CDC_2023_training)
+tune_mtry <- tuneRF(CDC_2023_training[,-18], 
+                    CDC_2023_training[,18], 
+                    improve = 1e-5, 
+                    plot = TRUE) 
+```
+
+# Random Forest Coss-Validation - SG
+
+```{r}
+# Define resampling method using 5-fold cross-validation
+set.seed(123)  # For reproducibility
+cv_folds <- vfold_cv(CDC_2023_training, v = 5)
+
+# Define the recipe for pre-processing
+diabetes_recipe <- 
+  recipe(DIABETE4 ~ ., data = CDC_2023_training) %>%
+  step_dummy(all_nominal_predictors())  # Handle categorical variables
+
+# Prep the recipe
+diabetes_recipe_prepped <- prep(diabetes_recipe)
+
+# Define the Random Forest model specification
+rf_spec <- 
+  rand_forest(
+    mode = "classification", 
+    trees = 500, 
+    mtry = round(sqrt(ncol(CDC_2023_training) - 1))  # Set a fixed mtry value
+  ) %>%
+  set_engine("ranger")
+
+# Define the workflow
+rf_workflow <- 
+  workflow() %>%
+  add_recipe(diabetes_recipe) %>%
+  add_model(rf_spec)
+
+# Fit the workflow using cross-validation
+set.seed(123)  # For reproducibility
+rf_results <- rf_workflow %>%
+  fit_resamples(
+    resamples = cv_folds,
+    metrics = metric_set(yardstick::accuracy, yardstick::roc_auc),  # Use explicit metric functions
+    control = control_resamples(save_pred = TRUE)
+  )
+
+# Collect and print cross-validation metrics
+rf_metrics <- collect_metrics(rf_results)
+print(rf_metrics)
+
+# Train the final Random Forest model on the entire training data
+final_rf_model <- rf_workflow %>%
+  fit(data = CDC_2023_training)
+
+# Prepare the recipe on the training data
+diabetes_recipe_prepped <- diabetes_recipe %>%
+  prep(training = CDC_2023_training)
+
+# Bake both training and test datasets
+train_baked <- bake(diabetes_recipe_prepped, new_data = CDC_2023_training)
+test_baked <- bake(diabetes_recipe_prepped, new_data = CDC_2023_test)
+
+# Train the Random Forest model on the baked training data
+final_rf_model <- rf_spec %>%
+  fit(DIABETE4 ~ ., data = train_baked)
+
+# Generate predictions on the baked test data
+test_results <- 
+  test_baked %>%
+  bind_cols(
+    predict(final_rf_model, new_data = test_baked, type = "prob") %>%
+      dplyr::rename(p_1 = .pred_1)  # Rename predicted probabilities
+  ) %>%
+  dplyr::mutate(DIABETE4 = CDC_2023_test$DIABETE4)  # Add true labels for evaluation
+
+################################### plot ROC curve ###################################
+
+roc_data <- data.frame(threshold=seq(1,0,-0.01), fpr=0, tpr=0)
+for (i in roc_data$threshold) {
+  
+  over_threshold <- test_results[test_results$p_1 >= i, ]
+  
+  fpr <- sum(over_threshold$DIABETE4==0)/sum(test_results$DIABETE4==0)
+  roc_data[roc_data$threshold==i, "fpr"] <- fpr
+  
+  tpr <- sum(over_threshold$DIABETE4==1)/sum(test_results$DIABETE4==1)
+  roc_data[roc_data$threshold==i, "tpr"] <- tpr
+  
+}
+
+ggplot() +
+  geom_line(data = roc_data, aes(x = fpr, y = tpr, color = threshold), linewidth = 2) +
+  scale_color_gradientn(colors = rainbow(3)) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(data = roc_data[seq(1, 101, 10), ], aes(x = fpr, y = tpr)) +
+  geom_text(data = roc_data[seq(1, 101, 10), ],
+            aes(x = fpr, y = tpr, label = threshold, hjust = 1.2, vjust = -0.2)) +
+  theme_bw() +
+  xlab("FPR") + 
+  ylab("TPR")
+
+############################# ROC curve calculation breakdown ############################
+
+threshold <- 0.2
+
+test_results$predictions <- ifelse(test_results$p_1 >= threshold, 1, 0)
+tp <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==1, ])
+paste("True Positive:", tp)
+fp <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==1, ])
+paste("False Positive:", fp)
+tn <- nrow(test_results[test_results$DIABETE4==0 & test_results$predictions==0, ])
+paste("True Negative:", tn)
+fn <- nrow(test_results[test_results$DIABETE4==1 & test_results$predictions==0, ])
+paste("False Negative:", fn)
+
+test_results$type <- ""
+test_results[test_results$DIABETE4==1 & test_results$predictions==1, "type"] <- "tp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==1, "type"] <- "fp"
+test_results[test_results$DIABETE4==0 & test_results$predictions==0, "type"] <- "tn"
+test_results[test_results$DIABETE4==1 & test_results$predictions==0, "type"] <- "fn"
+
+fpr <- fp/(fp + tn)
+tpr <- tp/(tp + fn)
+
+acc <- (tp + tn) / (tp + tn + fp + fn)
+paste("Accuracy: ", acc)
+
+###################################          AUC           ###################################
+
+roc_object <- roc( CDC_2023_test$DIABETE4, test_results$p_1)
+auc(roc_object)
+
+################################### plot calibration curve ###################################
+
+calibration_data <- data.frame(bin_midpoint=seq(0.05,0.95,0.1),
+                               observed_event_percentage=0)
+for (i in seq(0.05,0.95,0.1)) {
+  
+  in_interval <- test_results[test_results$p_1 >= (i-0.05) & test_results$p_1 <= (i+0.05), ]
+  oep <- nrow(in_interval[in_interval$DIABETE4==1, ])/nrow(in_interval)
+  calibration_data[calibration_data$bin_midpoint==i, "observed_event_percentage"] <- oep
+  
+}
+
+ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percentage)) +
+  geom_line(linewidth = 1) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(size = 2) +
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Bin Midpoint") +
+  ylab("Observed Event Percentage") + 
+  theme_bw()
+
+# Evaluate ROC-AUC on the test set
+roc_object <- roc(test_results$DIABETE4, test_results$p_1)
+auc_value <- auc(roc_object)
+cat("Test ROC-AUC:", auc_value, "\n")
+
+# Plot ROC curve
+roc_data <- yardstick::roc_curve(DIABETE4, p_1, test_results)  # Correct syntax
+autoplot(roc_data) + ggtitle("ROC Curve")
+
+```
+
+# Testing Assumptions - SG
+
+```{r}
+# Assumption 1: Independence of observations
+# Check for duplicates in the dataset
+duplicates <- CDC_2023_training[duplicated(CDC_2023_training), ]
+if (nrow(duplicates) > 0) {
+  cat("There are", nrow(duplicates), "duplicate rows in the training dataset.\n")
+} else {
+  cat("No duplicate rows found in the training dataset.\n")
+}
+
+# Assumption 2: Multicollinearity
+# Check multicollinearity using correlation matrix for numeric predictors
+numeric_columns <- sapply(CDC_2023_training, is.numeric)
+correlation_matrix <- cor(CDC_2023_training[, numeric_columns], use = "complete.obs")
+heatmap_data <- reshape2::melt(correlation_matrix)
+ggplot(heatmap_data, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Correlation Matrix Heatmap")
+
+# Calculate Variance Inflation Factor (VIF) for numeric predictors
+vif_values <- car::vif(lm(DIABETE4 ~ ., data = CDC_2023_training))
+cat("Variance Inflation Factors (VIF):\n")
+print(vif_values)
+
+# Assumption 3: Dataset size adequacy
+# Check number of samples relative to predictors
+n_samples <- nrow(CDC_2023_training)
+n_features <- ncol(CDC_2023_training) - 1  # Exclude target variable
+if (n_samples > n_features * 10) {
+  cat("Dataset size is adequate for Random Forest.\n")
+} else {
+  cat("Dataset size may be insufficient for Random Forest.\n")
+}
+
+# Assumption 4: Class imbalance
+# Check class proportions
+class_proportions <- prop.table(table(CDC_2023_training$DIABETE4))
+cat("Class Proportions:\n")
+print(class_proportions)
+
+# Visualize class imbalance
+ggplot(data.frame(Class = names(class_proportions), Proportion = as.numeric(class_proportions)), 
+       aes(x = Class, y = Proportion)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  ggtitle("Class Proportions") +
+  ylab("Proportion") +
+  xlab("Class")
+
+# Assumption 5: Predictive accuracy and calibration
+# Evaluate ROC-AUC and calibration curve
+roc_object <- roc(test_results$DIABETE4, test_results$p_1)
+auc_value <- auc(roc_object)
+cat("Test ROC-AUC:", auc_value, "\n")
+
+# Plot calibration curve
+calibration_data <- data.frame(bin_midpoint = seq(0.05, 0.95, 0.1), observed_event_percentage = 0)
+for (i in seq(0.05, 0.95, 0.1)) {
+  in_interval <- test_results[test_results$p_1 >= (i - 0.05) & test_results$p_1 <= (i + 0.05), ]
+  oep <- nrow(in_interval[in_interval$DIABETE4 == 1, ]) / nrow(in_interval)
+  calibration_data[calibration_data$bin_midpoint == i, "observed_event_percentage"] <- oep
+}
+
+ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percentage)) +
+  geom_line(linewidth = 1) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  geom_point(size = 2) +
+  geom_text(aes(label = bin_midpoint), hjust = 0.75, vjust = -0.5) +
+  xlab("Predicted Probability (Bin Midpoint)") +
+  ylab("Observed Event Percentage") +
+  ggtitle("Calibration Curve") +
+  theme_bw()
+```

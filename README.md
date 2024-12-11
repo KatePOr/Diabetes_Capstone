@@ -1,4 +1,7 @@
 # Assessing the Influence of Social, Demographic, and Health Factors on Diabetes Risk
+By: Stephanie Garofalo and Kate O'Rourke
+## Project Details and Overview
+This project investigates how social, demographic, and health factors influence the likelihood of developing diabetes, addressing a gap in public health research that often overlooks the role of socio-economic and lifestyle factors. Using the CDC’s BRFSS 2023 dataset, we applied machine learning models, including Random Forest and XGBoost, to identify key predictors and make accurate risk predictions. The findings highlight the importance of BMI, age, high blood pressure, and income, offering actionable insights for public health organizations to design targeted interventions.
 ## Background & Question
 ### Research Question:
 "How do social factors, demographic characteristics, and health conditions influence the likelihood of developing diabetes?"
@@ -62,6 +65,13 @@ Lasso regression will be used preliminarily to determine if the chosen predictor
 The question will be answered depending on the accuracy and fit of the models that are trained. The accuracy and fit (AUC and ROC graph) will be compared between the groups of predictor variables. Multiple models will be trained per group to ensure that the ability of those variables to predict if the individual has diabetes is not due to the predictive model but due to the variables being used to train. The hypothesis will first be supported if the lasso regression shows that there are variables within each group of predictors that are significant to the model. Second, the accuracy of the different models will be compared and, if all the models have high accuracy, the hypothesis will be supported. The variables found to be significant between the different groups and between the two datasets will be recommended to be focused on in future research. 
 
 If the models identify different important variables or show low accuracy, it could indicate a few things. First, if each model highlights different variables, this may suggest complex, non-linear relationships between predictors and diabetes risk, or it could show that some predictors provide similar information, causing them to substitute for one another in importance. Second, if all models perform poorly, it might mean that social and demographic predictors alone don’t fully capture diabetes risk, possibly missing key influences like genetics. Low accuracy could also result from an uneven number of cases with and without diabetes, or simply from limitations in model choice, suggesting that richer data or more advanced methods may be needed.
+
+## Instructions for Running the Code
+To replicate this analysis, start by downloading the BRFSS 2023 dataset from the CDC website. Ensure that R is installed on your system, along with packages such as tidyverse, caret, glmnet, and xgboost. Run the scripts in the following order: (1) Data_Cleaning.Rmd, (2) Data_Visualization_Before_and_After_Preprocessing.Rmd , (3) Exploratory_Data_Analysis.Rmd, (4) Preprocessing_and_Feature_Engineering.Rmd, (5) Logistic_Regression_All_Predictors.Rmd, (6) Random_Forest.Rmd, and (7) xgBoost_All_Predictors.Rmd.
+
+### Troubleshooting and Recommendations
+During the analysis, users may encounter missing package errors or file path issues. To resolve these, ensure all required R packages are installed and that dataset files are placed in the correct directories. For additional support, refer to the CDC’s BRFSS documentation for data-related questions or the R manual for troubleshooting R-specific issues. Recommendations for future improvements include exploring additional clinical predictors, such as A1C levels, and testing the models on datasets from previous years to validate their performance over time.
+
 ## References:
 CDC. (2023) Behavioral Risk Factor Surveillance System (BRFSS) 2023 Data [Dataset]. CDC. https://www.cdc.gov/brfss/annual_data/annual_2023.html
 Fatima, S., Hussain, A., Amir, S. B., Ahmed, S. H., & Aslam, S. M. H. (2023). Xgboost and random forest algorithms: an in depth analysis. Pakistan Journal of Scientific Research, 3(1), 26-31.

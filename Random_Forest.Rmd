@@ -86,15 +86,11 @@ CDC_2023_test <- CDC_2023_test %>%
   rename( AGE80 = `_AGE80` )
 ```
 
-
-# K-Fold Stratified Grid Cross-Validation
-# Random Forest Coss-Validation - KO + SG
-
+# Fit final model - KO + SG
 ```{r}
-# Define resampling method using 5-fold cross-validation
 set.seed(123)  # For reproducibility
 
-# Calculate Weights for rf_pred
+# Calculate case weights
 CDC_2023_training <-
   CDC_2023_training %>% 
   mutate(
@@ -115,46 +111,7 @@ diabetes_recipe_prepped <- prep(diabetes_recipe)
 diabetes_recipe_juiced <- diabetes_recipe_prepped %>%
   juice()
 
-# Define the Random Forest model specification
-model_tune <- 
-  rand_forest(
-    mtry = tune(),
-    min_n = tune(),
-    trees = 50, 
-    ) %>%
-  set_engine("ranger", seed(123)) %>%
-  set_mode("classification")
-
-# 5-fold Stratified Cross-validation
-cv_folds <- vfold_cv(diabetes_recipe_juiced, v = 5, strata = DIABETE4)
-
-# Define the workflow
-tune_rf <- workflow() %>%
-  add_model(model_tune) %>%
-  add_formula(DIABETE4~.) %>% #Should this be add recipe instead?? Test (prev. code: add_formula(DIABETE4~.) )
-  add_case_weights(case_wts)
-
-# According to preliminary tuning, optimal grid values are around mtry 2 and min_n
-tuned <- tune_rf %>% 
-  tune_grid(resamples = cv_folds, 
-            grid =expand.grid(mtry=1:19, min_n=10:30),
-            metrics = metric_set(yardstick::roc_auc))
-
-df <- tuned %>% collect_metrics()
-df <- df %>% arrange(-mean) %>% tibble(rank=seq_len(nrow(df)), .)
-df
-
-scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h", 
-          ticktype = "detailed", pch = 19, cex = 0.5, 
-          main="the true distribution", xlab="mtry",
-          ylab="min_n", zlab="roc_auc")
-```
-
-# Fit final model - KO
-```{r}
-set.seed(123)  # For reproducibility
-
-# Random forest model with mtry and min_n set to best values from cross-validation
+# Random forest model with mtry and min_n set to best values from trial and error
 rf_spec <- 
   rand_forest( mode = "classification", 
                trees = 500, 

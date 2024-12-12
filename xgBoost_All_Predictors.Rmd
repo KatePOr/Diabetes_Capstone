@@ -1,5 +1,4 @@
 ---
----
 title: "xgBoost Model for All Variables"
 output: pdf_document
 ---
@@ -70,7 +69,7 @@ CDC_2023_training[, columns] <- normalize(CDC_2023_training, columns)
 CDC_2023_test[, columns] <- normalize(CDC_2023_test, columns)
 ```
 
-# xgBoost 
+# xgBoost - KO
 ```{r}
 # using the standard predictive analytics/machine learning approach with the tidymodels framework 
 data_split <- initial_split(CDC_2023_subset, strata = "DIABETE4", prop = 0.77)
@@ -149,7 +148,7 @@ best_auc <- xgboost_results %>% select_best("roc_auc")
 best_auc
 ```
 
-# Best model
+# Best model - KO
 ```{r}
 xgboost_model_final <- boost_tree(
       trees = 197,
@@ -264,13 +263,3 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
   ylab("Observed Event Percentage") + 
   theme_bw() 
 ```
-
-Old code:
-final_xgboost_workflow <- finalize_workflow(
-  xgboost_workflow,
-  best_auc
-)
-
-last_xgboost_fit <- 
-  final_xgboost_workflow %>% 
-  last_fit(data_split)

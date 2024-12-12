@@ -7,6 +7,8 @@ output: pdf_document
 
 # Exploratory Data Analysis
 
+All graphs were used to further understand the data. Graphs used in the report were labeled as **Used in report**.
+
 ## Read in dataset - KO
 ```{r}
 library(readr)
@@ -29,6 +31,7 @@ library(plotly)
 library(gtsummary)
 library(stringr)
 library(readr)
+library(ggcorrplot)
 ```
 
 ### Convert columns (except for AGE & BMI) to factors - KO & SG
@@ -36,6 +39,12 @@ library(readr)
 col_names <- colnames(CDC_2023_subset)
 col_names <- col_names[-c(5:6, 10, 19, 20)] # Column 5 (PHYSHLTH), 6 (MENTHLTH), 10 (DRNK3GE5), 19 (_AGE80), 20 (BMI)
 CDC_2023_subset[,col_names] <- lapply(CDC_2023_subset[,col_names] , factor)
+```
+
+### Change column name 
+```{r}
+CDC_2023_subset <- CDC_2023_subset %>%
+  rename( AGE80 = `_AGE80` )
 ```
 
 ## Get columns proportions for factor data after data cleaning - KO
@@ -377,20 +386,34 @@ ggplot(CDC_2023_subset, aes(x=DIABETE4, fill=DIABETE4)) +
   scale_y_continuous(labels = scales::comma)
 ```
 
-### _AGE80 summary (Age between 18 and 80 years old) - KO
+### _AGE80 summary (Age between 18 and 80 years old) - KO  **Used in report**
 ```{r}
-# Proportion summary
-table <- table(CDC_2023_subset$`_AGE80`, useNA = "ifany")
-prop.table(table) %>% {. * 100} %>% round(4)
+# Density Plot of _AGE80 separated by type 2 diabetes
+CDC_2023_subset %>%
+  # Rename variables to simplify axes and legends
+  mutate(DIABETE4 = str_replace(DIABETE4, "0", "No Diabetes")) %>%
+  mutate(DIABETE4 = str_replace(DIABETE4, "1", "Type 2 Diabetes")) %>%
+  ggplot(aes(x = AGE80, fill = DIABETE4)) + 
+    geom_density(alpha=0.4) + 
+    scale_y_continuous(labels = scales::comma)+
+    ylab("Density") +
+    xlab("Age") + 
+    theme_bw()
 
-# Bar graph
-CDC_2023_subset %>% 
-  ggplot(aes(x=`_AGE80`)) + 
-    geom_bar() + 
-    scale_y_continuous(labels = scales::comma) 
+# Density Plot of BMI separated by type 2 diabetes
+CDC_2023_subset %>%
+  # Rename variables to simplify axes and legends
+  mutate(DIABETE4 = str_replace(DIABETE4, "0", "No Diabetes")) %>%
+  mutate(DIABETE4 = str_replace(DIABETE4, "1", "Type 2 Diabetes")) %>%
+  ggplot(aes(x = BMI, fill = DIABETE4)) + 
+    geom_density(alpha=0.4) + 
+    scale_y_continuous(labels = scales::comma)+
+    ylab("Density") +
+    xlab("BMI") + 
+    theme_bw()
 ```
 
-## Compare Diabetes and Exercise to Determine the Impact on Type 2 Diabetes - SG
+## Compare Diabetes and Exercise to Determine the Impact on Type 2 Diabetes - SG  **Used in report**
 ```{r}
 # Convert DIABETE4 and EXERANY2 to correct types
 CDC_2023_subset$EXERANY2 <- as.factor(CDC_2023_subset$EXERANY2)
@@ -431,7 +454,7 @@ ggplot(exercise_bmi_diabetes_data, aes(x = Exercise, y = Diabetes_Prevalence, fi
 CDC_2023_subset$DIABETE4 <- as.factor(CDC_2023_subset$DIABETE4)
 ```
 
-## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis) and histogram for all and type 2 diabetes within BMI - KO
+## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis) and histogram for all and type 2 diabetes within BMI - KO **Used in report**
 ```{r}
 # Summary of BMI column
 library(moments)
@@ -475,6 +498,27 @@ ggplot(data=BMI_diab, aes(x = BMI)) +
     xlim(0,120) 
 ```
 
+## Measures of central tendencies, spread, and measures of distribution shape (skew and kurtosis) and histogram for all and type 2 diabetes within _AGE80 - KO **Used in report**
+```{r}
+# Summary of BMI column
+print(summary(CDC_2023_subset$AGE80))
+cat("Skewness is ", skewness(CDC_2023_subset$AGE80), ". ")
+cat("Kurtosis is ", kurtosis(CDC_2023_subset$AGE80), ".")
+
+# Histogram 
+AGE_summ1 <- CDC_2023_subset %>% summarize(mean = mean(AGE80), median = median(AGE80)) #Calculate mean for graph
+ggplot(data = CDC_2023_subset, aes(x = AGE80)) +
+  geom_histogram(aes(y= ..density..), binwidth = 0.5, fill="grey") +
+  geom_density(linewidth = 0.7) +
+  geom_vline(aes(xintercept = mean), AGE_summ1, color = "red", linewidth = 0.7) +
+  geom_vline(aes(xintercept = median), AGE_summ1, color = "blue", linewidth = 0.7) + 
+  xlab("BMI") +
+  ylab("Density") + 
+  labs(title="Density Plot of Age") + 
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
 ## Proportion tables split by social factors, demographic characteristics, and health conditions - KO
 
 ### Change column names for simpler axes and legends - KO
@@ -482,7 +526,7 @@ ggplot(data=BMI_diab, aes(x = BMI)) +
 colnames(CDC_2023_subset) <- c("Education", "Employment_Status", "Income", "Sex", "Physical_Health", "Mental_Health", "Personal_Doctor", "Not_Afford_Doctor", "Smoked_100_Pkgs", "Binge_Drinking", "Exercised", "HighBP", "High_Cholesterol", "Myocardial_Infarction", "Heart_Disease", "Stroke", "Kidney_Disease", "Type_2_Diabetes", "Age", "BMI", "BMI_Category")
 ```
 
-### Proportion tables for each of the categories (Social Factors, Demographics, and Diseases) split by type 2 diabetes - KO
+### Proportion tables for each of the categories (Social Factors, Demographics, and Diseases) split by type 2 diabetes - KO **Used in report**
 ```{r}
 # Social factors
 CDC_2023_subset %>%
@@ -525,7 +569,7 @@ CDC_2023_subset %>%
   mutate(Type_2_Diabetes = str_replace(Type_2_Diabetes, "1", "Type 2 Diabetes")) %>%
   # Create proportion table
   tbl_summary(
-    include = c(Education, Employment_Status, Income, Sex, BMI),
+    include = c(Education, Employment_Status, Income, Sex, BMI, Age),
     by = Type_2_Diabetes,
     missing = 'no',
     type = all_dichotomous() ~ "categorical"
@@ -652,7 +696,7 @@ CDC_2023_subset %>%
 
 ## Compare education with diseases - KO
 
-### Compare Education with Type_2_Diabetes using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO
+### Compare Education with Type_2_Diabetes using bar plots (stacked bar for overall numbers and fill bar plots for proportions) - KO **Used in report**
 ```{r}
 # Stacked Bar Plot
 CDC_2023_subset %>%
@@ -972,7 +1016,6 @@ CDC_2023_subset %>%
 
 #### Disease - KO
 ```{r}
-library(ggcorrplot)
 # Select diseases columns
 subset <- CDC_2023_subset %>%
   select(HighBP, High_Cholesterol, Myocardial_Infarction, Heart_Disease, Stroke, Kidney_Disease, Type_2_Diabetes) 
@@ -997,7 +1040,7 @@ model.matrix(~0+., data=subset) %>%
 ```{r}
 # Select demographics variables
 subset <- CDC_2023_subset %>%
-  select(Education, Employment_Status, Income, Sex, BMI) 
+  select(Education, Employment_Status, Income, Sex, BMI, Age) 
 # Create heat map
 model.matrix(~0+., data=subset) %>% 
   cor(use="pairwise.complete.obs") %>% 
@@ -1007,7 +1050,7 @@ model.matrix(~0+., data=subset) %>%
 ## Plots to compare relationship between Demographic Variables
 ### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
 
-### Comapre Employment_Status, Education, and Type 2 Diabetes - KO
+### Compare Employment_Status, Education, and Type 2 Diabetes - KO **Used in report**
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Employment_Status, Type_2_Diabetes) %>%
@@ -1060,10 +1103,7 @@ ggplot(df_summary, aes(x = Education, y = Income, size=Count, color=Count)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-## Plots to compare relationship between Demographic and Social Factors Variables - KO
-### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
-
-### Comapre Mental_Health, Education, and Type 2 Diabetes - KO
+### Compare Mental_Health, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Mental_Health, Type_2_Diabetes) %>%
@@ -1087,7 +1127,7 @@ ggplot(df_summary, aes(x = Education, y = Mental_Health, size=Count, color=Count
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-### Comapre Not_Afford_Doctor, Education, and Type 2 Diabetes - KO
+### Compare Not_Afford_Doctor, Education, and Type 2 Diabetes - KO
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Education, Not_Afford_Doctor, Type_2_Diabetes) %>%
@@ -1111,7 +1151,7 @@ ggplot(df_summary, aes(x = Education, y = Not_Afford_Doctor, size=Count, color=C
   geom_point() +
   facet_wrap(~Type_2_Diabetes) +
   coord_flip() + 
-  ylab("Days with Poor Mental Health") +
+  ylab("Can the individual afford a doctor?") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
@@ -1142,7 +1182,7 @@ ggplot(df_summary, aes(x = Education, y = Physical_Health, size=Count, color=Cou
 ```
 
 ### Plots to compare relationship between Type 2 Diabetes and Kidney Disease
-#### Different size dots for different counts (use to see if there is a relationship between the two variables) - KO
+
 ```{r}
 df_summary <- CDC_2023_subset %>%                                                                 
   group_by(Type_2_Diabetes, Kidney_Disease, Sex) %>%

@@ -71,6 +71,9 @@ A custom function of normalize is used in Preprocessing_and_Feature_Engineering.
 ### Troubleshooting and Recommendations
 During the analysis, users may encounter missing package errors or file path issues. To resolve these, ensure all required R packages are installed and that dataset files are placed in the correct directories. For additional support, refer to the CDC’s BRFSS documentation for data-related questions or the R manual for troubleshooting R-specific issues. Recommendations for future improvements include exploring additional clinical predictors, such as A1C levels, and testing the models on datasets from previous years to validate their performance over time.
 
+## Team Duties and Work on Project
+Both group members were involved in writing code and writing the final report. Individuals wrote much of the code separately but came together to review the code weekly where constructive feedback was given and ensured the code was running properly after all commits on both group members computers. All files were tested by both group members and ran without issue. The group members initials are present next to  each section of code to indicate who wrote each part. These initials indicate the delegated section assignments.
+
 ## References:
 CDC. (2023) Behavioral Risk Factor Surveillance System (BRFSS) 2023 Data [Dataset]. CDC. https://www.cdc.gov/brfss/annual_data/annual_2023.html
 Fatima, S., Hussain, A., Amir, S. B., Ahmed, S. H., & Aslam, S. M. H. (2023). Xgboost and random forest algorithms: an in depth analysis. Pakistan Journal of Scientific Research, 3(1), 26-31.

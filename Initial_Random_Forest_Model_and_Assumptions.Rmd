@@ -340,11 +340,6 @@ ggplot(data = calibration_data, aes(x = bin_midpoint, y = observed_event_percent
 roc_object <- roc(test_results$DIABETE4, test_results$p_1)
 auc_value <- auc(roc_object)
 cat("Test ROC-AUC:", auc_value, "\n")
-
-# Plot ROC curve
-roc_data <- yardstick::roc_curve(DIABETE4, p_1, test_results)  # Correct syntax
-autoplot(roc_data) + ggtitle("ROC Curve")
-
 ```
 
 # Testing Assumptions - SG

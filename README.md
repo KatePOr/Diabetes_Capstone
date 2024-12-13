@@ -1,5 +1,5 @@
 # Assessing the Influence of Social, Demographic, and Health Factors on Diabetes Risk
-By: Stephanie Garofalo and Kate O'Rourke
+By: Stephanie G. and Kate O.
 ## Project Details and Overview
 This project investigates how social, demographic, and health factors influence the likelihood of developing diabetes, addressing a gap in public health research that often overlooks the role of socio-economic and lifestyle factors. Using the CDC’s BRFSS 2023 dataset, we applied machine learning models, including Random Forest and XGBoost, to identify key predictors and make accurate risk predictions. The findings highlight the importance of BMI, age, high blood pressure, and income, offering actionable insights for public health organizations to design targeted interventions.
 ## Background & Question
